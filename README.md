@@ -1,12 +1,12 @@
 # youtube-publish-sample
 
-GitHub の `main` ブランチ更新を契機に、GitHub Actions 上で短い更新紹介動画を生成し、YouTube Data API で限定公開アップロードするサンプルリポジトリです。
+GitHub Actions を手動実行し、短い更新紹介動画を生成して YouTube Data API で限定公開アップロードするサンプルリポジトリです。
 
 このサンプルは public repository として公開できるように、実在する個人情報、ローカル絶対パス、秘密情報を含めていません。
 
 ## できること
 
-- `main` への push で GitHub Actions を起動
+- GitHub Actions の `Run workflow` から手動でアップロード workflow を起動
 - GitHub Actions 内で `scripts/make_video.py` を実行し、短い MP4 動画を生成
 - GitHub Actions 内で `scripts/upload_youtube.py` を実行し、YouTube Data API にアップロード
 - アップロード時の `privacyStatus` は `unlisted`
@@ -45,6 +45,23 @@ youtube-publish-sample/
 ```bash
 python -m unittest discover -s tests
 ```
+
+## YouTube アップロードを手動実行する
+
+`.github/workflows/publish-youtube.yml` は、`main` への push では起動しません。YouTube へ動画をアップロードしたいときだけ、GitHub Actions 画面から手動で実行します。
+
+手順:
+
+1. GitHub でこの repository を開きます。
+2. `Actions` タブを開きます。
+3. 左側の workflow 一覧から `YouTube 更新動画の公開` を選択します。
+4. `Run workflow` をクリックします。
+5. Branch が `main` になっていることを確認します。
+6. もう一度 `Run workflow` をクリックします。
+7. workflow の実行が完了するまで待ちます。
+8. 実行結果を開き、`アップロード結果を表示` step または job summary で YouTube の video ID と URL を確認します。
+
+この方式では README 修正やコード修正を `main` に push しても、YouTube へのアップロードは自動では実行されません。
 
 ## GitHub Secrets
 

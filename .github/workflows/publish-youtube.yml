@@ -1,9 +1,7 @@
 name: YouTube 更新動画の公開
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
