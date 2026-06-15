@@ -1,16 +1,17 @@
 # youtube-publish-sample
 
-GitHub の `main` ブランチ更新を契機に、短い更新紹介動画を生成し、YouTube Data API で限定公開アップロードするサンプルリポジトリです。
+GitHub の `main` ブランチ更新を契機に、GitHub Actions 上で短い更新紹介動画を生成し、YouTube Data API で限定公開アップロードするサンプルリポジトリです。
 
 このサンプルは public repository として公開できるように、実在する個人情報、ローカル絶対パス、秘密情報を含めていません。
 
 ## できること
 
 - `main` への push で GitHub Actions を起動
-- `scripts/make_video.py` で短い MP4 動画を生成
-- `scripts/upload_youtube.py` で YouTube Data API にアップロード
+- GitHub Actions 内で `scripts/make_video.py` を実行し、短い MP4 動画を生成
+- GitHub Actions 内で `scripts/upload_youtube.py` を実行し、YouTube Data API にアップロード
 - アップロード時の `privacyStatus` は `unlisted`
 - YouTube API 認証情報は GitHub Secrets から読み込み
+- Google Cloud の VM、Cloud Run、Storage などの有料リソースは使わない
 
 ## リポジトリ構成
 
@@ -37,16 +38,32 @@ Repository settings の `Secrets and variables` -> `Actions` に、次の secret
 | `YOUTUBE_CLIENT_SECRET` | Google Cloud OAuth client secret |
 | `YOUTUBE_REFRESH_TOKEN` | YouTube Data API 用の OAuth refresh token |
 
-## Google Cloud / YouTube 設定
+## 無料前提の YouTube API 設定
 
-1. Google Cloud Console で project を作成します。
-2. YouTube Data API v3 を有効化します。
+このサンプルは GitHub Actions 上で動画生成とアップロードを実行します。Google Cloud 上でサーバーやストレージを作成する必要はありません。
+
+ただし、YouTube へのアップロードには Google の OAuth 認可が必要です。そのため、無料の API/OAuth 設定として次の作業だけ行います。
+
+1. Google Cloud Console または Google API Console で API 用プロジェクトを作成します。
+2. 課金リソースは作成せず、YouTube Data API v3 だけを有効化します。
 3. OAuth consent screen を設定します。
 4. OAuth client を作成します。
 5. `https://www.googleapis.com/auth/youtube.upload` scope を使って refresh token を発行します。
 6. 発行した値を GitHub Secrets に登録します。
 
-Refresh token の発行方法は環境や運用方針で変わるため、このサンプルには発行用スクリプトを含めていません。CI では既に発行済みの refresh token を使う前提です。
+初回の OAuth 同意だけはブラウザでの手動認可が必要です。GitHub Actions はブラウザで Google アカウントにログインできないため、初回認可まで完全自動化する構成にはしていません。認可後は、`main` への push ごとに GitHub Actions が動画生成から YouTube への限定公開アップロードまで実行します。
+
+## 費用について
+
+このサンプルが使う処理は次の通りです。
+
+- 動画生成: GitHub Actions の runner 上で実行
+- YouTube アップロード: YouTube Data API v3 を利用
+- Google Cloud 有料リソース: 未使用
+
+public repository であれば GitHub Actions の利用枠は無料で使えます。YouTube Data API は quota 制で、通常の少量アップロードであれば追加費用なしで試せます。Google Cloud の VM、Cloud Run、Cloud Storage、BigQuery などを作成しないでください。
+
+安全のため、Google Cloud Console で billing budget や予算アラートを設定しておくと安心です。
 
 ## ローカルでの確認
 
