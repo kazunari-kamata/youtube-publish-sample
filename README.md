@@ -38,6 +38,17 @@ Repository settings の `Secrets and variables` -> `Actions` に、次の secret
 | `YOUTUBE_CLIENT_SECRET` | Google Cloud OAuth client secret |
 | `YOUTUBE_REFRESH_TOKEN` | YouTube Data API 用の OAuth refresh token |
 
+複数の YouTube チャンネルへアップロードする場合は、チャンネルごとに refresh token を分けて登録します。
+
+例:
+
+| Secret name | 説明 |
+| --- | --- |
+| `YOUTUBE_REFRESH_TOKEN_MAIN` | メイン YouTube チャンネル用の refresh token |
+| `YOUTUBE_REFRESH_TOKEN_SUB` | サブ YouTube チャンネル用の refresh token |
+
+`YOUTUBE_CLIENT_ID` と `YOUTUBE_CLIENT_SECRET` は、同じ Google Cloud project / OAuth client の値を共通利用できます。どの YouTube チャンネルへアップロードされるかは、`YOUTUBE_REFRESH_TOKEN` を取得するときにログインして認可した Google アカウントで決まります。
+
 ## 無料前提の YouTube API 設定
 
 このサンプルは GitHub Actions 上で動画生成とアップロードを実行します。Google Cloud 上でサーバーやストレージを作成する必要はありません。
@@ -109,6 +120,58 @@ OAuth client は、GitHub Actions から YouTube API を使うための `client_
 
 - [YouTube Data API Python Quickstart](https://developers.google.com/youtube/v3/quickstart/python)
 - [Manage OAuth Clients](https://support.google.com/cloud/answer/15549257)
+
+## Google アカウントと YouTube チャンネル
+
+Google Cloud project を作る Google アカウントと、アップロード先 YouTube チャンネルを持つ Google アカウントは同一でなくても構いません。
+
+役割は次のように分かれます。
+
+- Google Cloud 側アカウント: API project、YouTube Data API v3、OAuth client を管理する
+- YouTube 側アカウント: OAuth 同意を行い、refresh token を発行する
+- GitHub Actions: refresh token に紐づく YouTube チャンネルへ動画をアップロードする
+
+OAuth consent screen の Test users には、実際に OAuth 同意を行う YouTube 側の Google アカウントを追加してください。
+
+## 複数 YouTube チャンネルに対応する場合
+
+複数チャンネルに対応する場合は、チャンネルごとに `YOUTUBE_REFRESH_TOKEN` を発行して GitHub Secrets に登録します。
+
+### 同じ Google アカウントが複数チャンネルを管理している場合
+
+1. OAuth 同意時に、アップロードしたい YouTube チャンネルを選択します。
+2. そのチャンネル用の refresh token を取得します。
+3. GitHub Secrets に `YOUTUBE_REFRESH_TOKEN_MAIN` などの名前で登録します。
+4. 別チャンネルにもアップロードする場合は、同じ OAuth client で再度認可し、別の refresh token を取得します。
+5. GitHub Secrets に `YOUTUBE_REFRESH_TOKEN_SUB` などの名前で登録します。
+
+### Google アカウント自体がチャンネルごとに異なる場合
+
+1. OAuth consent screen の Test users に、各 YouTube チャンネルの Google アカウントを追加します。
+2. 各 Google アカウントで OAuth 同意を行います。
+3. アカウントごとに取得した refresh token を GitHub Secrets に分けて登録します。
+
+### workflow でチャンネルを切り替える例
+
+このサンプルの workflow は単一チャンネル用です。複数チャンネルで使う場合は、upload step の `YOUTUBE_REFRESH_TOKEN` に渡す secret を切り替えます。
+
+```yaml
+env:
+  YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+  YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+  YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN_MAIN }}
+```
+
+サブチャンネルへアップロードしたい workflow では、次のように変更します。
+
+```yaml
+env:
+  YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+  YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+  YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN_SUB }}
+```
+
+同じ GitHub Actions run で複数チャンネルへ同時にアップロードする場合は、upload step をチャンネル数分だけ追加し、それぞれ別の refresh token secret を渡してください。
 
 ## 費用について
 
