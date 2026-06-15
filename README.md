@@ -63,6 +63,22 @@ Repository settings の `Secrets and variables` -> `Actions` に、次の secret
 
 public repository であれば GitHub Actions の利用枠は無料で使えます。YouTube Data API は quota 制で、通常の少量アップロードであれば追加費用なしで試せます。Google Cloud の VM、Cloud Run、Cloud Storage、BigQuery などを作成しないでください。
 
+YouTube Data API のデフォルト quota は次の通りです。
+
+- `videos.insert`: 100 回/日
+- `search.list`: 100 回/日
+- その他の endpoint: 合計 10,000 units/日
+- quota は Pacific Time の午前 0 時にリセット
+- 無効な API request でも最低 1 quota point を消費
+
+このサンプルの upload 処理は `videos.insert` を 1 回呼び出します。そのため、単純計算では 1 project あたり 1 日 100 本までのアップロードがデフォルト quota の目安です。
+
+## API を使わない自動操作について
+
+MCP、Playwright、Chrome 自動操作などで YouTube Studio の画面を操作してアップロードする方法は、技術的には実装できる場合があります。
+
+ただし、YouTube の Terms of Service では、YouTube の事前許可なしに bot、scraper などの automated means で Service にアクセスすることが制限されています。そのため、このリポジトリでは YouTube Studio のブラウザ自動操作によるアップロードは採用せず、公式に提供されている YouTube Data API を使います。
+
 安全のため、Google Cloud Console で billing budget や予算アラートを設定しておくと安心です。
 
 ## ローカルでの確認
