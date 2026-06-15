@@ -121,30 +121,60 @@ OAuth client は、GitHub Actions から YouTube API を使うための `client_
 
 1. <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener noreferrer">Google Auth Platform Clients</a> を開きます。
 2. `CREATE CLIENT` または `クライアントを作成` をクリックします。
-3. Application type は `Desktop app` を選択します。
-4. Name に `youtube-publish-sample-local` などを入力します。
-5. `Create` をクリックします。
-6. 画面に `Client ID` と `Client secret` が表示されます。
-7. `Client ID` の値をコピーします。
-8. `Client secret` の値をコピーします。
-9. GitHub repository の `Settings` -> `Secrets and variables` -> `Actions` を開きます。
-10. `New repository secret` をクリックします。
-11. `Name` に `YOUTUBE_CLIENT_ID` と入力します。
-12. `Secret` に Google Cloud の `Client ID` を貼り付けます。
-13. `Add secret` をクリックします。
-14. もう一度 `New repository secret` をクリックします。
-15. `Name` に `YOUTUBE_CLIENT_SECRET` と入力します。
-16. `Secret` に Google Cloud の `Client secret` を貼り付けます。
-17. `Add secret` をクリックします。
+3. Application type は `Web application` を選択します。
+4. Name に `youtube-publish-sample-oauth-playground` などを入力します。
+5. `Authorized redirect URIs` に `https://developers.google.com/oauthplayground` を追加します。
+6. `Create` をクリックします。
+7. 画面に `Client ID` と `Client secret` が表示されます。
+8. `Client ID` の値をコピーします。
+9. `Client secret` の値をコピーします。
+10. GitHub repository の `Settings` -> `Secrets and variables` -> `Actions` を開きます。
+11. `New repository secret` をクリックします。
+12. `Name` に `YOUTUBE_CLIENT_ID` と入力します。
+13. `Secret` に Google Cloud の `Client ID` を貼り付けます。
+14. `Add secret` をクリックします。
+15. もう一度 `New repository secret` をクリックします。
+16. `Name` に `YOUTUBE_CLIENT_SECRET` と入力します。
+17. `Secret` に Google Cloud の `Client secret` を貼り付けます。
+18. `Add secret` をクリックします。
 
 `Client secret` の場所が分からない場合は、次のどちらかで確認できます。
 
 - OAuth client 作成直後: `Client created` のようなポップアップに `Client ID` と `Client secret` が表示されます。
-- 後から確認する場合: <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener noreferrer">Google Auth Platform Clients</a> を開き、作成した client name、例: `youtube-publish-sample-local` をクリックします。詳細画面の `Client secret` 欄に表示されます。
+- 後から確認する場合: <a href="https://console.cloud.google.com/auth/clients" target="_blank" rel="noopener noreferrer">Google Auth Platform Clients</a> を開き、作成した client name、例: `youtube-publish-sample-oauth-playground` をクリックします。詳細画面の `Client secret` 欄に表示されます。
 
 Google Cloud の `Client secret` は、GitHub の secret 登録画面の `Secret` 入力欄に貼り付けます。`Name` 入力欄には secret の名前、つまり `YOUTUBE_CLIENT_SECRET` を入力します。
 
-`YOUTUBE_REFRESH_TOKEN` は、この OAuth client を使って一度だけブラウザで YouTube アップロード権限を許可した後に取得する値です。
+`YOUTUBE_REFRESH_TOKEN` は、この OAuth client を使って一度だけブラウザで YouTube アップロード権限を許可した後に取得する値です。次の手順で取得します。
+
+### 5. refresh token を取得する
+
+ここでは Google 公式の OAuth 2.0 Playground を使います。OAuth 2.0 Playground は、ブラウザで Google ログインと権限許可を行い、refresh token を確認するためのツールです。
+
+1. <a href="https://developers.google.com/oauthplayground/" target="_blank" rel="noopener noreferrer">OAuth 2.0 Playground</a> を開きます。
+2. 右上の歯車アイコンをクリックします。
+3. `Use your own OAuth credentials` にチェックを入れます。
+4. `OAuth Client ID` に、Google Cloud で作成した `Client ID` を貼り付けます。
+5. `OAuth Client secret` に、Google Cloud で作成した `Client secret` を貼り付けます。
+6. `Close` をクリックします。
+7. 左側の `Step 1 Select & authorize APIs` の入力欄に `https://www.googleapis.com/auth/youtube.upload` を入力します。
+8. `Authorize APIs` をクリックします。
+9. ブラウザに Google のログイン画面が表示されます。
+10. アップロード先 YouTube チャンネルを管理している Google アカウントでログインします。
+11. YouTube チャンネル選択画面が表示された場合は、アップロードしたいチャンネルを選択します。
+12. 「このアプリに YouTube アップロード権限を許可しますか？」という確認画面で許可します。
+13. OAuth 2.0 Playground に戻ります。
+14. `Step 2 Exchange authorization code for tokens` の `Exchange authorization code for tokens` をクリックします。
+15. `Refresh token` 欄に表示された値をコピーします。
+16. GitHub repository の `Settings` -> `Secrets and variables` -> `Actions` を開きます。
+17. `New repository secret` をクリックします。
+18. `Name` に `YOUTUBE_REFRESH_TOKEN` と入力します。
+19. `Secret` に OAuth 2.0 Playground の `Refresh token` を貼り付けます。
+20. `Add secret` をクリックします。
+
+ここでいう Google ログイン画面は、手順 8 の後にブラウザで表示される Google のログイン画面です。GitHub Actions の画面ではありません。
+
+複数チャンネルに対応する場合は、手順 8 から 15 をチャンネルごとに繰り返し、取得した refresh token を `YOUTUBE_REFRESH_TOKEN_MAIN` や `YOUTUBE_REFRESH_TOKEN_SUB` など別々の GitHub Secrets に登録します。
 
 参考:
 
@@ -187,9 +217,9 @@ OAuth consent screen の Test users には、実際に OAuth 同意を行う You
 
 例として、同じ Google アカウントが「メインチャンネル」と「サブチャンネル」を管理している場合です。
 
-ここでいう Google ログイン画面は、refresh token を取得するために OAuth 認可 URL をブラウザで開いたときに表示される Google のログイン画面です。GitHub Actions の画面ではありません。
+ここでいう Google ログイン画面は、上の「5. refresh token を取得する」で <a href="https://developers.google.com/oauthplayground/" target="_blank" rel="noopener noreferrer">OAuth 2.0 Playground</a> を開き、`Authorize APIs` をクリックした後に表示される Google のログイン画面です。GitHub Actions の画面ではありません。
 
-1. refresh token 取得用の手順を開始し、OAuth 認可 URL をブラウザで開きます。
+1. 上の「5. refresh token を取得する」の手順 1 から 8 までを実行します。
 2. ブラウザに Google のログイン画面が表示されたら、YouTube チャンネルを管理している Google アカウントでログインします。
 3. Google から「どの YouTube チャンネルで続行しますか？」のような選択画面が出た場合、まずメインチャンネルを選択します。
 4. YouTube アップロード権限を許可します。
@@ -199,7 +229,7 @@ OAuth consent screen の Test users には、実際に OAuth 同意を行う You
 8. `Name` に `YOUTUBE_REFRESH_TOKEN_MAIN` と入力します。
 9. `Secret` にメインチャンネル用 refresh token を貼り付けます。
 10. `Add secret` をクリックします。
-11. 次に、もう一度 refresh token 取得用の手順を開始し、OAuth 認可 URL をブラウザで開きます。
+11. 次に、もう一度「5. refresh token を取得する」の手順 1 から 8 までを実行します。
 12. ブラウザに Google のログイン画面が表示されたら、同じ Google アカウントでログインします。
 13. チャンネル選択画面で、今度はサブチャンネルを選択します。
 14. YouTube アップロード権限を許可します。
@@ -213,12 +243,12 @@ OAuth consent screen の Test users には、実際に OAuth 同意を行う You
 1. <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener noreferrer">Google Auth Platform</a> を開きます。
 2. OAuth consent screen の Test users に `main@example.com` を追加します。
 3. 同じ Test users に `sub@example.com` も追加します。
-4. refresh token 取得用の手順を開始し、OAuth 認可 URL をブラウザで開きます。
+4. 上の「5. refresh token を取得する」の手順 1 から 8 までを実行します。
 5. ブラウザに Google のログイン画面が表示されたら、メインチャンネルを管理している Google アカウントでログインします。`main@example.com` は例なので、実際には自分の Google アカウントを使います。
 6. YouTube アップロード権限を許可します。
 7. メインチャンネル用 refresh token を取得します。
 8. GitHub Secrets に `YOUTUBE_REFRESH_TOKEN_MAIN` として登録します。
-9. もう一度 refresh token 取得用の手順を開始し、OAuth 認可 URL をブラウザで開きます。
+9. もう一度「5. refresh token を取得する」の手順 1 から 8 までを実行します。
 10. ブラウザに Google のログイン画面が表示されたら、サブチャンネルを管理している Google アカウントでログインします。`sub@example.com` は例なので、実際には自分の Google アカウントを使います。
 11. YouTube アップロード権限を許可します。
 12. サブチャンネル用 refresh token を取得します。
