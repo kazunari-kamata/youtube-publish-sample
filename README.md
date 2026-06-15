@@ -167,19 +167,73 @@ OAuth consent screen の Test users には、実際に OAuth 同意を行う You
 
 複数チャンネルに対応する場合は、チャンネルごとに `YOUTUBE_REFRESH_TOKEN` を発行して GitHub Secrets に登録します。
 
+考え方:
+
+- `YOUTUBE_CLIENT_ID`: Google Cloud の OAuth client。複数チャンネルで共通利用できます。
+- `YOUTUBE_CLIENT_SECRET`: Google Cloud の OAuth client secret。複数チャンネルで共通利用できます。
+- `YOUTUBE_REFRESH_TOKEN`: YouTube チャンネルごとに別々に用意します。
+
+例:
+
+| アップロード先 | GitHub Secret name |
+| --- | --- |
+| メインチャンネル | `YOUTUBE_REFRESH_TOKEN_MAIN` |
+| サブチャンネル | `YOUTUBE_REFRESH_TOKEN_SUB` |
+| 会社用チャンネル | `YOUTUBE_REFRESH_TOKEN_COMPANY` |
+
+どのチャンネルにアップロードされるかは、OAuth 同意時に選択した YouTube チャンネルと、そのとき発行された refresh token で決まります。
+
 ### 同じ Google アカウントが複数チャンネルを管理している場合
 
-1. OAuth 同意時に、アップロードしたい YouTube チャンネルを選択します。
-2. そのチャンネル用の refresh token を取得します。
-3. GitHub Secrets に `YOUTUBE_REFRESH_TOKEN_MAIN` などの名前で登録します。
-4. 別チャンネルにもアップロードする場合は、同じ OAuth client で再度認可し、別の refresh token を取得します。
-5. GitHub Secrets に `YOUTUBE_REFRESH_TOKEN_SUB` などの名前で登録します。
+例として、同じ Google アカウントが「メインチャンネル」と「サブチャンネル」を管理している場合です。
+
+1. refresh token 取得用の手順を開始します。
+2. Google ログイン画面では、YouTube チャンネルを管理している Google アカウントでログインします。
+3. Google から「どの YouTube チャンネルで続行しますか？」のような選択画面が出た場合、まずメインチャンネルを選択します。
+4. YouTube アップロード権限を許可します。
+5. メインチャンネル用の refresh token を取得します。
+6. GitHub repository の `Settings` -> `Secrets and variables` -> `Actions` を開きます。
+7. `New repository secret` をクリックします。
+8. `Name` に `YOUTUBE_REFRESH_TOKEN_MAIN` と入力します。
+9. `Secret` にメインチャンネル用 refresh token を貼り付けます。
+10. `Add secret` をクリックします。
+11. 次に、もう一度 refresh token 取得用の手順を開始します。
+12. Google ログイン画面では同じ Google アカウントでログインします。
+13. チャンネル選択画面で、今度はサブチャンネルを選択します。
+14. YouTube アップロード権限を許可します。
+15. サブチャンネル用の refresh token を取得します。
+16. GitHub Secrets に `YOUTUBE_REFRESH_TOKEN_SUB` という名前で登録します。
 
 ### Google アカウント自体がチャンネルごとに異なる場合
 
-1. OAuth consent screen の Test users に、各 YouTube チャンネルの Google アカウントを追加します。
-2. 各 Google アカウントで OAuth 同意を行います。
-3. アカウントごとに取得した refresh token を GitHub Secrets に分けて登録します。
+例として、メインチャンネルは `main@example.com`、サブチャンネルは `sub@example.com` が管理している場合です。
+
+1. [Google Auth Platform](https://console.cloud.google.com/auth/overview) を開きます。
+2. OAuth consent screen の Test users に `main@example.com` を追加します。
+3. 同じ Test users に `sub@example.com` も追加します。
+4. refresh token 取得用の手順を開始します。
+5. Google ログイン画面で `main@example.com` としてログインします。
+6. YouTube アップロード権限を許可します。
+7. メインチャンネル用 refresh token を取得します。
+8. GitHub Secrets に `YOUTUBE_REFRESH_TOKEN_MAIN` として登録します。
+9. もう一度 refresh token 取得用の手順を開始します。
+10. Google ログイン画面で `sub@example.com` としてログインします。
+11. YouTube アップロード権限を許可します。
+12. サブチャンネル用 refresh token を取得します。
+13. GitHub Secrets に `YOUTUBE_REFRESH_TOKEN_SUB` として登録します。
+
+OAuth consent screen の Test users に追加していない Google アカウントでは、未公開の OAuth app を認可できない場合があります。
+
+### GitHub Secrets の登録例
+
+複数チャンネル運用では、最低限次のように登録します。
+
+| Secret name | 入れる値 |
+| --- | --- |
+| `YOUTUBE_CLIENT_ID` | Google Cloud の Client ID |
+| `YOUTUBE_CLIENT_SECRET` | Google Cloud の Client secret |
+| `YOUTUBE_REFRESH_TOKEN_MAIN` | メインチャンネルで OAuth 同意して取得した refresh token |
+| `YOUTUBE_REFRESH_TOKEN_SUB` | サブチャンネルで OAuth 同意して取得した refresh token |
 
 ### workflow でチャンネルを切り替える例
 
@@ -202,6 +256,36 @@ env:
 ```
 
 同じ GitHub Actions run で複数チャンネルへ同時にアップロードする場合は、upload step をチャンネル数分だけ追加し、それぞれ別の refresh token secret を渡してください。
+
+例:
+
+```yaml
+- name: メインチャンネルへアップロード
+  env:
+    YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+    YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+    YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN_MAIN }}
+  run: |
+    python scripts/upload_youtube.py \
+      --file output/update.mp4 \
+      --title "main ブランチ更新のお知らせ" \
+      --description "メインチャンネル向けの更新動画です。" \
+      --privacy-status unlisted
+
+- name: サブチャンネルへアップロード
+  env:
+    YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+    YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+    YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN_SUB }}
+  run: |
+    python scripts/upload_youtube.py \
+      --file output/update.mp4 \
+      --title "main ブランチ更新のお知らせ" \
+      --description "サブチャンネル向けの更新動画です。" \
+      --privacy-status unlisted
+```
+
+この場合、同じ動画ファイルを 2 つの YouTube チャンネルへそれぞれ 1 回ずつアップロードします。YouTube Data API の quota も 2 回分消費します。
 
 ## 費用について
 
