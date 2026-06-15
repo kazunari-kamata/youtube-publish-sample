@@ -125,15 +125,24 @@ OAuth client は、GitHub Actions から YouTube API を使うための `client_
 4. Name に `youtube-publish-sample-local` などを入力します。
 5. `Create` をクリックします。
 6. 画面に `Client ID` と `Client secret` が表示されます。
-7. GitHub repository の `Settings` -> `Secrets and variables` -> `Actions` を開きます。
-8. `New repository secret` をクリックします。
-9. `Name` に `YOUTUBE_CLIENT_ID` と入力します。
-10. `Secret` に Google Cloud の `Client ID` を貼り付けます。
-11. `Add secret` をクリックします。
-12. もう一度 `New repository secret` をクリックします。
-13. `Name` に `YOUTUBE_CLIENT_SECRET` と入力します。
-14. `Secret` に Google Cloud の `Client secret` を貼り付けます。
-15. `Add secret` をクリックします。
+7. `Client ID` の値をコピーします。
+8. `Client secret` の値をコピーします。
+9. GitHub repository の `Settings` -> `Secrets and variables` -> `Actions` を開きます。
+10. `New repository secret` をクリックします。
+11. `Name` に `YOUTUBE_CLIENT_ID` と入力します。
+12. `Secret` に Google Cloud の `Client ID` を貼り付けます。
+13. `Add secret` をクリックします。
+14. もう一度 `New repository secret` をクリックします。
+15. `Name` に `YOUTUBE_CLIENT_SECRET` と入力します。
+16. `Secret` に Google Cloud の `Client secret` を貼り付けます。
+17. `Add secret` をクリックします。
+
+`Client secret` の場所が分からない場合は、次のどちらかで確認できます。
+
+- OAuth client 作成直後: `Client created` のようなポップアップに `Client ID` と `Client secret` が表示されます。
+- 後から確認する場合: [Google Auth Platform Clients](https://console.cloud.google.com/auth/clients) を開き、作成した client name、例: `youtube-publish-sample-local` をクリックします。詳細画面の `Client secret` 欄に表示されます。
+
+Google Cloud の `Client secret` は、GitHub の secret 登録画面の `Secret` 入力欄に貼り付けます。`Name` 入力欄には secret の名前、つまり `YOUTUBE_CLIENT_SECRET` を入力します。
 
 `YOUTUBE_REFRESH_TOKEN` は、この OAuth client を使って一度だけブラウザで YouTube アップロード権限を許可した後に取得する値です。
 
