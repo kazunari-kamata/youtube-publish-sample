@@ -130,6 +130,23 @@ YouTube Data API のデフォルト quota は次の通りです。
 
 このサンプルの upload 処理は `videos.insert` を 1 回呼び出します。そのため、単純計算では 1 project あたり 1 日 100 本までのアップロードがデフォルト quota の目安です。
 
+## 予算アラートの設定
+
+このサンプルでは Google Cloud の有料リソースを使いませんが、誤って VM、Cloud Run、Cloud Storage などを作成した場合に気づけるよう、予算アラートを設定しておくと安心です。
+
+予算アラートは「設定金額に近づいたらメールで通知する」機能です。課金を自動停止する機能ではありません。
+
+1. [Google Cloud Billing Budgets](https://console.cloud.google.com/billing/budgets) を開きます。
+2. 対象の billing account を選択します。
+3. `Create budget` または `予算を作成` をクリックします。
+4. Name に `youtube-publish-sample-budget` などを入力します。
+5. Scope で、このサンプル用の project だけを対象にします。
+6. Amount は少額にします。例: `100 JPY` または `1 USD`
+7. Alerts は `50%`, `90%`, `100%` などを設定します。
+8. 通知先メールを確認して保存します。
+
+この設定をしても、YouTube Data API の無料 quota が増減するわけではありません。あくまで Google Cloud 側で想定外の課金リソースを作ってしまった場合に気づくための保険です。
+
 ## API を使わない自動操作について
 
 MCP、Playwright、Chrome 自動操作などで YouTube Studio の画面を操作してアップロードする方法は、技術的には実装できる場合があります。
