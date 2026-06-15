@@ -363,6 +363,17 @@ YouTube Data API のデフォルト quota は次の通りです。
 
 予算アラートは「設定金額に近づいたらメールで通知する」機能です。課金を自動停止する機能ではありません。
 
+予算アラートを作るには Google Cloud の billing account が必要です。<a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener noreferrer">Cloud Billing</a> を開いたときに「請求先アカウントがありません」「No billing accounts」などと表示される場合は、まだ billing account が作成されていません。
+
+このサンプルだけを試す場合、Google Cloud の VM、Cloud Run、Cloud Storage などの有料リソースは使わないため、billing account が無い状態でも YouTube Data API の設定を進められる場合があります。その場合は予算アラートの設定はスキップして構いません。
+
+billing account が無い場合の選択肢:
+
+- 無料 API 設定だけ進めたい場合: 予算アラートはスキップします。
+- 予算アラートも設定したい場合: <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener noreferrer">Cloud Billing</a> で billing account を作成してから、下の手順に進みます。
+
+billing account を作成する場合は、支払い方法の登録を求められることがあります。作成後も、このサンプル用 project では VM、Cloud Run、Cloud Storage などを作成しないでください。
+
 1. <a href="https://console.cloud.google.com/billing/budgets" target="_blank" rel="noopener noreferrer">Google Cloud Billing Budgets</a> を開きます。
 2. 対象の billing account を選択します。
 3. `Create budget` または `予算を作成` をクリックします。
