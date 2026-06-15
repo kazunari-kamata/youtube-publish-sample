@@ -53,6 +53,63 @@ Repository settings の `Secrets and variables` -> `Actions` に、次の secret
 
 初回の OAuth 同意だけはブラウザでの手動認可が必要です。GitHub Actions はブラウザで Google アカウントにログインできないため、初回認可まで完全自動化する構成にはしていません。認可後は、`main` への push ごとに GitHub Actions が動画生成から YouTube への限定公開アップロードまで実行します。
 
+## Google 側の設定手順
+
+Google Cloud project は、YouTube API を使うための設定入れ物です。VM、Cloud Run、Storage などの実行環境を作る必要はありません。
+
+### 1. API 用 project を作成する
+
+1. [Google Cloud Console](https://console.cloud.google.com/) を開きます。
+2. Google アカウントでログインします。
+3. 画面上部の project 選択プルダウンを開きます。
+4. `新しいプロジェクト` をクリックします。
+5. Project name に `youtube-publish-sample` などを入力します。
+6. `作成` をクリックします。
+
+### 2. YouTube Data API v3 を有効化する
+
+1. [API Library](https://console.cloud.google.com/apis/library) を開きます。
+2. 画面上部で、先ほど作成した project が選択されていることを確認します。
+3. 検索欄に `YouTube Data API v3` と入力します。
+4. `YouTube Data API v3` をクリックします。
+5. `有効にする` をクリックします。
+
+### 3. OAuth consent screen を設定する
+
+OAuth consent screen は、Google ログイン時に表示される「このアプリに YouTube アップロード権限を許可しますか？」という確認画面の設定です。
+
+1. [Google Auth Platform](https://console.cloud.google.com/auth/overview) を開きます。
+2. 画面上部で対象 project が選択されていることを確認します。
+3. `Get started` または `OAuth consent screen` を開きます。
+4. App name に `youtube-publish-sample` などを入力します。
+5. User support email に自分の Google アカウントを選択します。
+6. Audience または User type は、個人利用なら `External` を選択します。
+7. Contact email に自分のメールアドレスを入力します。
+8. Scopes に `https://www.googleapis.com/auth/youtube.upload` を追加します。
+9. Test users に、アップロード先 YouTube チャンネルを持つ自分の Google アカウントを追加します。
+10. 保存します。
+
+一般公開しない OAuth app でも、Test users に自分を追加すれば、自分のアカウントで認可できます。
+
+### 4. OAuth client を作成する
+
+OAuth client は、GitHub Actions から YouTube API を使うための `client_id` と `client_secret` を発行する設定です。
+
+1. [Google Auth Platform Clients](https://console.cloud.google.com/auth/clients) を開きます。
+2. `CREATE CLIENT` または `クライアントを作成` をクリックします。
+3. Application type は `Desktop app` を選択します。
+4. Name に `youtube-publish-sample-local` などを入力します。
+5. `Create` をクリックします。
+6. 表示された Client ID を GitHub Secrets の `YOUTUBE_CLIENT_ID` に登録します。
+7. 表示された Client secret を GitHub Secrets の `YOUTUBE_CLIENT_SECRET` に登録します。
+
+`YOUTUBE_REFRESH_TOKEN` は、この OAuth client を使って一度だけブラウザで YouTube アップロード権限を許可した後に取得する値です。
+
+参考:
+
+- [YouTube Data API Python Quickstart](https://developers.google.com/youtube/v3/quickstart/python)
+- [Manage OAuth Clients](https://support.google.com/cloud/answer/15549257)
+
 ## 費用について
 
 このサンプルが使う処理は次の通りです。
