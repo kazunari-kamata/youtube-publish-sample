@@ -29,7 +29,7 @@ jobs:
       - name: Python 依存関係をインストール
         run: |
           python -m pip install --upgrade pip
-          python -m pip install google-api-python-client google-auth google-auth-oauthlib
+          python -m pip install -r requirements.txt
 
       - name: YouTube Secrets を確認
         env:
@@ -49,6 +49,7 @@ jobs:
             --message "新しい変更がマージされました。"
 
       - name: YouTube に限定公開アップロード
+        id: upload
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
@@ -60,3 +61,12 @@ jobs:
             --description "この動画は main ブランチ更新後に GitHub Actions で自動生成されました。" \
             --tags "github-actions,automation,youtube,自動化" \
             --privacy-status unlisted
+
+      - name: アップロード結果を表示
+        run: |
+          echo "YouTube video ID: ${{ steps.upload.outputs.video_id }}"
+          echo "YouTube video URL: ${{ steps.upload.outputs.video_url }}"
+          echo "### YouTube upload result" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Video ID: ${{ steps.upload.outputs.video_id }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- URL: ${{ steps.upload.outputs.video_url }}" >> "$GITHUB_STEP_SUMMARY"

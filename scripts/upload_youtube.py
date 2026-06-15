@@ -87,7 +87,8 @@ def upload_video(
             print(f"Uploaded {int(status.progress() * 100)}%")
 
     video_id = response["id"]
-    print(f"Uploaded video: https://www.youtube.com/watch?v={video_id}")
+    video_url = f"https://www.youtube.com/watch?v={video_id}"
+    print(f"Uploaded video: {video_url}")
     return video_id
 
 
@@ -96,13 +97,19 @@ def main() -> None:
     tags = [tag.strip() for tag in args.tags.split(",") if tag.strip()]
 
     try:
-        upload_video(
+        video_id = upload_video(
             file_path=Path(args.file),
             title=args.title,
             description=args.description,
             tags=tags,
             privacy_status=args.privacy_status,
         )
+        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        github_output = os.environ.get("GITHUB_OUTPUT")
+        if github_output:
+            with open(github_output, "a", encoding="utf-8") as output:
+                output.write(f"video_id={video_id}\n")
+                output.write(f"video_url={video_url}\n")
     except HttpError as error:
         raise RuntimeError(f"YouTube API upload failed: {error}") from error
 
