@@ -38,6 +38,19 @@ Repository settings の `Secrets and variables` -> `Actions` に、次の secret
 | `YOUTUBE_CLIENT_SECRET` | Google Cloud OAuth client secret |
 | `YOUTUBE_REFRESH_TOKEN` | YouTube Data API 用の OAuth refresh token |
 
+登録手順:
+
+1. GitHub でこの repository を開きます。
+2. `Settings` を開きます。
+3. 左メニューの `Secrets and variables` -> `Actions` を開きます。
+4. `New repository secret` をクリックします。
+5. `Name` に secret name を入力します。例: `YOUTUBE_CLIENT_ID`
+6. `Secret` に Google Cloud で発行された値を貼り付けます。
+7. `Add secret` をクリックします。
+8. `YOUTUBE_CLIENT_SECRET` と `YOUTUBE_REFRESH_TOKEN` も同じ手順で登録します。
+
+GitHub Secrets は、workflow 実行時だけ環境変数として読み込まれます。README や workflow ファイルに secret の実値を書かないでください。
+
 複数の YouTube チャンネルへアップロードする場合は、チャンネルごとに refresh token を分けて登録します。
 
 例:
@@ -111,8 +124,16 @@ OAuth client は、GitHub Actions から YouTube API を使うための `client_
 3. Application type は `Desktop app` を選択します。
 4. Name に `youtube-publish-sample-local` などを入力します。
 5. `Create` をクリックします。
-6. 表示された Client ID を GitHub Secrets の `YOUTUBE_CLIENT_ID` に登録します。
-7. 表示された Client secret を GitHub Secrets の `YOUTUBE_CLIENT_SECRET` に登録します。
+6. 画面に `Client ID` と `Client secret` が表示されます。
+7. GitHub repository の `Settings` -> `Secrets and variables` -> `Actions` を開きます。
+8. `New repository secret` をクリックします。
+9. `Name` に `YOUTUBE_CLIENT_ID` と入力します。
+10. `Secret` に Google Cloud の `Client ID` を貼り付けます。
+11. `Add secret` をクリックします。
+12. もう一度 `New repository secret` をクリックします。
+13. `Name` に `YOUTUBE_CLIENT_SECRET` と入力します。
+14. `Secret` に Google Cloud の `Client secret` を貼り付けます。
+15. `Add secret` をクリックします。
 
 `YOUTUBE_REFRESH_TOKEN` は、この OAuth client を使って一度だけブラウザで YouTube アップロード権限を許可した後に取得する値です。
 
