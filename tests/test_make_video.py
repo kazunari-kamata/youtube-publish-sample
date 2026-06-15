@@ -1,4 +1,5 @@
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
@@ -15,13 +16,14 @@ class MakeVideoTest(TestCase):
     @patch("scripts.make_video.subprocess.run")
     @patch("scripts.make_video.shutil.which", return_value="/usr/bin/ffmpeg")
     def test_generate_video_invokes_ffmpeg(self, _which, run) -> None:
-        generate_video(
+        generated = generate_video(
             output=Path("output/test.mp4"),
             title="Title",
             message="Message",
             duration=3,
         )
 
+        self.assertTrue(generated)
         run.assert_called_once()
         command = run.call_args.args[0]
         self.assertEqual(command[0], "ffmpeg")
@@ -37,3 +39,38 @@ class MakeVideoTest(TestCase):
                 message="Message",
                 duration=3,
             )
+
+    @patch("scripts.make_video.subprocess.run")
+    @patch("scripts.make_video.shutil.which", return_value="/usr/bin/ffmpeg")
+    def test_generate_video_skips_existing_file_without_force(self, _which, run) -> None:
+        with TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "existing.mp4"
+            output.write_bytes(b"already exists")
+
+            generated = generate_video(
+                output=output,
+                title="Title",
+                message="Message",
+                duration=3,
+            )
+
+        self.assertFalse(generated)
+        run.assert_not_called()
+
+    @patch("scripts.make_video.subprocess.run")
+    @patch("scripts.make_video.shutil.which", return_value="/usr/bin/ffmpeg")
+    def test_generate_video_overwrites_existing_file_with_force(self, _which, run) -> None:
+        with TemporaryDirectory() as tmpdir:
+            output = Path(tmpdir) / "existing.mp4"
+            output.write_bytes(b"already exists")
+
+            generated = generate_video(
+                output=output,
+                title="Title",
+                message="Message",
+                duration=3,
+                force=True,
+            )
+
+        self.assertTrue(generated)
+        run.assert_called_once()

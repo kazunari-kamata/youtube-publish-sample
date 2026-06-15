@@ -19,6 +19,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Secondary message text.",
     )
     parser.add_argument("--duration", type=int, default=8, help="Video duration in seconds.")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite the output video even if it already exists.",
+    )
     return parser
 
 
@@ -32,7 +37,17 @@ def escape_drawtext(value: str) -> str:
     )
 
 
-def generate_video(output: Path, title: str, message: str, duration: int) -> None:
+def generate_video(
+    output: Path,
+    title: str,
+    message: str,
+    duration: int,
+    force: bool = False,
+) -> bool:
+    if output.exists() and not force:
+        print(f"Video already exists, skipping generation: {output}")
+        return False
+
     if shutil.which("ffmpeg") is None:
         raise RuntimeError("ffmpeg is required but was not found in PATH.")
 
@@ -64,12 +79,20 @@ def generate_video(output: Path, title: str, message: str, duration: int) -> Non
         str(output),
     ]
     subprocess.run(command, check=True)
+    return True
 
 
 def main() -> None:
     args = build_parser().parse_args()
-    generate_video(Path(args.output), args.title, args.message, args.duration)
-    print(f"Generated video: {args.output}")
+    generated = generate_video(
+        Path(args.output),
+        args.title,
+        args.message,
+        args.duration,
+        force=args.force,
+    )
+    if generated:
+        print(f"Generated video: {args.output}")
 
 
 if __name__ == "__main__":
