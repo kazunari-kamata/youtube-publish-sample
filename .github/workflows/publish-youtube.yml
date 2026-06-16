@@ -1,6 +1,11 @@
 name: YouTube 更新動画の公開
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - output/update.mp4
   workflow_dispatch:
     inputs:
       prepare_sample_video:
@@ -56,6 +61,15 @@ jobs:
             --output output/update.mp4 \
             --title "main ブランチ更新" \
             --message "新しい変更がマージされました。"
+
+      - name: アップロード対象動画を確認
+        run: |
+          test -s output/update.mp4
+          ffprobe -v error \
+            -show_entries format=duration,size \
+            -show_entries stream=width,height,nb_frames \
+            -of default=noprint_wrappers=1 \
+            output/update.mp4
 
       - name: YouTube に限定公開アップロード
         id: upload

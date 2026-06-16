@@ -4,3 +4,4 @@ __pycache__/
 .ruff_cache/
 output/*.mp4
 !output/.gitkeep
+!output/update.mp4

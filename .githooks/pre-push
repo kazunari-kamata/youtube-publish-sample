@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+video_path="output/update.mp4"
+max_bytes=$((95 * 1024 * 1024))
+
+if [ ! -e "${video_path}" ]; then
+  exit 0
+fi
+
+video_size="$(wc -c < "${video_path}" | tr -d '[:space:]')"
+if [ "${video_size}" -eq 0 ]; then
+  echo "pre-push: ${video_path} is empty. Create a valid MP4 before pushing." >&2
+  exit 1
+fi
+
+if [ "${video_size}" -gt "${max_bytes}" ]; then
+  echo "pre-push: ${video_path} is larger than 95 MiB. Keep it below GitHub's file size limit." >&2
+  exit 1
+fi
+
+if ! git diff --quiet -- "${video_path}" || ! git diff --cached --quiet -- "${video_path}" || git ls-files --others --exclude-standard -- "${video_path}" | grep -q .; then
+  echo "pre-push: ${video_path} exists but is not committed." >&2
+  echo "pre-push: commit it first, then push again:" >&2
+  echo "  git add -f ${video_path}" >&2
+  echo "  git commit -m \"アップロード用動画を更新\"" >&2
+  exit 1
+fi
