@@ -6,23 +6,6 @@ on:
       - main
     paths:
       - output/update.mp4
-  workflow_dispatch:
-    inputs:
-      prepare_sample_video:
-        description: "アップロード前に output/update.mp4 を作成し、生成スキップ動作を確認する"
-        required: false
-        default: false
-        type: boolean
-      youtube_title:
-        description: "YouTube 動画タイトル。未指定の場合は日時付きタイトルを自動生成する"
-        required: false
-        default: ""
-        type: string
-      youtube_description:
-        description: "YouTube 動画説明文。未指定の場合は日時や commit 情報を含む説明文を自動生成する"
-        required: false
-        default: ""
-        type: string
 
 permissions:
   contents: read
@@ -60,18 +43,6 @@ jobs:
           test -n "$YOUTUBE_CLIENT_SECRET"
           test -n "$YOUTUBE_REFRESH_TOKEN"
 
-      - name: 既存動画を事前作成
-        if: ${{ inputs.prepare_sample_video }}
-        run: |
-          ./scripts/create_sample_video.sh --force
-
-      - name: 更新紹介動画を生成
-        run: |
-          python scripts/make_video.py \
-            --output output/update.mp4 \
-            --title "main ブランチ更新" \
-            --message "新しい変更がマージされました。"
-
       - name: アップロード対象動画を確認
         run: |
           test -s output/update.mp4
@@ -84,19 +55,23 @@ jobs:
       - name: YouTube メタデータを作成
         id: metadata
         env:
-          INPUT_TITLE: ${{ inputs.youtube_title }}
-          INPUT_DESCRIPTION: ${{ inputs.youtube_description }}
           TZ: Asia/Tokyo
         run: |
           uploaded_at="$(date '+%Y-%m-%d %H:%M:%S %Z')"
           short_sha="${GITHUB_SHA::7}"
 
-          title="$INPUT_TITLE"
+          title=""
+          if [ -s output/youtube-title.txt ]; then
+            title="$(head -n 1 output/youtube-title.txt)"
+          fi
           if [ -z "$title" ]; then
             title="更新動画 ${uploaded_at}"
           fi
 
-          description="$INPUT_DESCRIPTION"
+          description=""
+          if [ -s output/youtube-description.md ]; then
+            description="$(cat output/youtube-description.md)"
+          fi
           if [ -z "$description" ]; then
             printf -v description '%s\n\nアップロード日時: %s\nRepository: %s\nBranch: %s\nCommit: %s\nWorkflow run: %s' \
               "GitHub Actions からアップロードした更新動画です。" \
