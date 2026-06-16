@@ -32,7 +32,7 @@ class MakeVideoTest(TestCase):
 
     @patch("scripts.make_video.shutil.which", return_value=None)
     def test_generate_video_requires_ffmpeg(self, _which) -> None:
-        with self.assertRaisesRegex(RuntimeError, "ffmpeg is required"):
+        with self.assertRaisesRegex(RuntimeError, "ffmpeg が必要"):
             generate_video(
                 output=Path("output/test.mp4"),
                 title="Title",

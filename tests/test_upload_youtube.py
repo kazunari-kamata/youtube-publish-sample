@@ -83,7 +83,7 @@ class UploadYouTubeTest(TestCase):
 
     def test_require_env_rejects_missing_value(self) -> None:
         with patch.dict(os.environ, {}, clear=True):
-            with self.assertRaisesRegex(RuntimeError, "Missing required environment variable"):
+            with self.assertRaisesRegex(RuntimeError, "必須の環境変数"):
                 upload_youtube.require_env("EXAMPLE_SECRET")
 
     def test_upload_video_returns_video_id_and_builds_request(self) -> None:

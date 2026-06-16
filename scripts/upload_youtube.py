@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upload a video to YouTube using credentials from environment variables."""
+"""環境変数の認証情報を使って動画を YouTube にアップロードします。"""
 
 from __future__ import annotations
 
@@ -18,33 +18,33 @@ TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the command-line argument parser for YouTube uploads."""
+    """YouTube アップロードコマンドの引数パーサーを作成します。"""
 
-    parser = argparse.ArgumentParser(description="Upload a video to YouTube.")
-    parser.add_argument("--file", required=True, help="Path to the MP4 file to upload.")
-    parser.add_argument("--title", required=True, help="YouTube video title.")
-    parser.add_argument("--description", default="", help="YouTube video description.")
-    parser.add_argument("--tags", default="", help="Comma-separated YouTube tags.")
+    parser = argparse.ArgumentParser(description="動画を YouTube にアップロードします。")
+    parser.add_argument("--file", required=True, help="アップロードする MP4 ファイルのパス。")
+    parser.add_argument("--title", required=True, help="YouTube 動画タイトル。")
+    parser.add_argument("--description", default="", help="YouTube 動画説明文。")
+    parser.add_argument("--tags", default="", help="カンマ区切りの YouTube タグ。")
     parser.add_argument(
         "--privacy-status",
         default="unlisted",
         choices=["private", "unlisted", "public"],
-        help="YouTube privacy status.",
+        help="YouTube の公開範囲。",
     )
     return parser
 
 
 def require_env(name: str) -> str:
-    """Return a required environment variable or raise a clear error."""
+    """必須の環境変数を取得し、未設定なら分かりやすいエラーを出します。"""
 
     value = os.environ.get(name)
     if not value:
-        raise RuntimeError(f"Missing required environment variable: {name}")
+        raise RuntimeError(f"必須の環境変数が未設定です: {name}")
     return value
 
 
 def youtube_client():
-    """Create an authenticated YouTube Data API client."""
+    """認証済みの YouTube Data API client を作成します。"""
 
     credentials = Credentials(
         token=None,
@@ -64,10 +64,10 @@ def upload_video(
     tags: list[str],
     privacy_status: str,
 ) -> str:
-    """Upload a video file to YouTube and return the uploaded video ID."""
+    """動画ファイルを YouTube にアップロードし、アップロード後の video ID を返します。"""
 
     if not file_path.exists():
-        raise FileNotFoundError(f"Video file does not exist: {file_path}")
+        raise FileNotFoundError(f"動画ファイルが存在しません: {file_path}")
 
     youtube = youtube_client()
     body = {
@@ -92,16 +92,16 @@ def upload_video(
     while response is None:
         status, response = request.next_chunk()
         if status:
-            print(f"Uploaded {int(status.progress() * 100)}%")
+            print(f"アップロード進行状況: {int(status.progress() * 100)}%")
 
     video_id = response["id"]
     video_url = f"https://www.youtube.com/watch?v={video_id}"
-    print(f"Uploaded video: {video_url}")
+    print(f"アップロードした動画: {video_url}")
     return video_id
 
 
 def main() -> None:
-    """Run the command-line YouTube upload flow."""
+    """コマンドラインから YouTube アップロード処理を実行します。"""
 
     args = build_parser().parse_args()
     tags = [tag.strip() for tag in args.tags.split(",") if tag.strip()]
@@ -121,7 +121,7 @@ def main() -> None:
                 output.write(f"video_id={video_id}\n")
                 output.write(f"video_url={video_url}\n")
     except HttpError as error:
-        raise RuntimeError(f"YouTube API upload failed: {error}") from error
+        raise RuntimeError(f"YouTube API アップロードに失敗しました: {error}") from error
 
 
 if __name__ == "__main__":

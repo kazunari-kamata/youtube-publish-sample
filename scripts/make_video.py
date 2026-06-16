@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a short update video with ffmpeg."""
+"""ffmpeg で短い更新紹介動画を生成します。"""
 
 from __future__ import annotations
 
@@ -10,27 +10,27 @@ from pathlib import Path
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build the command-line argument parser for video generation."""
+    """動画生成コマンドの引数パーサーを作成します。"""
 
-    parser = argparse.ArgumentParser(description="Generate a short MP4 update video.")
-    parser.add_argument("--output", default="output/update.mp4", help="Output MP4 path.")
-    parser.add_argument("--title", default="Repository Updated", help="Main title text.")
+    parser = argparse.ArgumentParser(description="短い MP4 更新紹介動画を生成します。")
+    parser.add_argument("--output", default="output/update.mp4", help="出力する MP4 ファイルのパス。")
+    parser.add_argument("--title", default="Repository Updated", help="動画に表示するタイトル。")
     parser.add_argument(
         "--message",
         default="A new update was merged to main.",
-        help="Secondary message text.",
+        help="動画に表示する補足メッセージ。",
     )
-    parser.add_argument("--duration", type=int, default=8, help="Video duration in seconds.")
+    parser.add_argument("--duration", type=int, default=8, help="動画の秒数。")
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Overwrite the output video even if it already exists.",
+        help="出力先の動画が既に存在しても上書きします。",
     )
     return parser
 
 
 def escape_drawtext(value: str) -> str:
-    """Escape text for ffmpeg drawtext filter usage."""
+    """ffmpeg の drawtext filter で使う文字列をエスケープします。"""
 
     return (
         value.replace("\\", "\\\\")
@@ -48,18 +48,18 @@ def generate_video(
     duration: int,
     force: bool = False,
 ) -> bool:
-    """Generate an MP4 video unless the output already exists.
+    """出力先に動画が存在しない場合だけ MP4 動画を生成します。
 
-    Returns True when a new video was generated, and False when generation was
-    skipped because the output file already existed and force was not enabled.
+    新しく動画を生成した場合は True を返します。既存ファイルがあり、
+    force が無効なため生成をスキップした場合は False を返します。
     """
 
     if output.exists() and not force:
-        print(f"Video already exists, skipping generation: {output}")
+        print(f"動画が既に存在するため生成をスキップします: {output}")
         return False
 
     if shutil.which("ffmpeg") is None:
-        raise RuntimeError("ffmpeg is required but was not found in PATH.")
+        raise RuntimeError("ffmpeg が必要ですが PATH に見つかりません。")
 
     output.parent.mkdir(parents=True, exist_ok=True)
 
@@ -93,7 +93,7 @@ def generate_video(
 
 
 def main() -> None:
-    """Run the command-line video generation flow."""
+    """コマンドラインから動画生成処理を実行します。"""
 
     args = build_parser().parse_args()
     generated = generate_video(
@@ -104,7 +104,7 @@ def main() -> None:
         force=args.force,
     )
     if generated:
-        print(f"Generated video: {args.output}")
+        print(f"動画を生成しました: {args.output}")
 
 
 if __name__ == "__main__":
