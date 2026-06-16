@@ -13,6 +13,16 @@ on:
         required: false
         default: false
         type: boolean
+      youtube_title:
+        description: "YouTube 動画タイトル。未指定の場合は日時付きタイトルを自動生成する"
+        required: false
+        default: ""
+        type: string
+      youtube_description:
+        description: "YouTube 動画説明文。未指定の場合は日時や commit 情報を含む説明文を自動生成する"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -71,25 +81,67 @@ jobs:
             -of default=noprint_wrappers=1 \
             output/update.mp4
 
+      - name: YouTube メタデータを作成
+        id: metadata
+        env:
+          INPUT_TITLE: ${{ inputs.youtube_title }}
+          INPUT_DESCRIPTION: ${{ inputs.youtube_description }}
+          TZ: Asia/Tokyo
+        run: |
+          uploaded_at="$(date '+%Y-%m-%d %H:%M:%S %Z')"
+          short_sha="${GITHUB_SHA::7}"
+
+          title="$INPUT_TITLE"
+          if [ -z "$title" ]; then
+            title="更新動画 ${uploaded_at}"
+          fi
+
+          description="$INPUT_DESCRIPTION"
+          if [ -z "$description" ]; then
+            description="$(cat <<EOF
+GitHub Actions からアップロードした更新動画です。
+
+アップロード日時: ${uploaded_at}
+Repository: ${GITHUB_REPOSITORY}
+Branch: ${GITHUB_REF_NAME}
+Commit: ${short_sha}
+Workflow run: ${GITHUB_RUN_NUMBER}
+EOF
+)"
+          fi
+
+          echo "title=${title}" >> "$GITHUB_OUTPUT"
+          {
+            echo "description<<EOF"
+            echo "$description"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: YouTube に限定公開アップロード
         id: upload
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_TITLE: ${{ steps.metadata.outputs.title }}
+          YOUTUBE_DESCRIPTION: ${{ steps.metadata.outputs.description }}
         run: |
           python scripts/upload_youtube.py \
             --file output/update.mp4 \
-            --title "main ブランチ更新のお知らせ" \
-            --description "この動画は main ブランチ更新後に GitHub Actions で自動生成されました。" \
+            --title "$YOUTUBE_TITLE" \
+            --description "$YOUTUBE_DESCRIPTION" \
             --tags "github-actions,automation,youtube,自動化" \
             --privacy-status unlisted
 
       - name: アップロード結果を表示
+        env:
+          YOUTUBE_TITLE: ${{ steps.metadata.outputs.title }}
         run: |
+          echo "YouTube title: $YOUTUBE_TITLE"
           echo "YouTube video ID: ${{ steps.upload.outputs.video_id }}"
           echo "YouTube video URL: ${{ steps.upload.outputs.video_url }}"
           echo "### YouTube upload result" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Title: $YOUTUBE_TITLE" >> "$GITHUB_STEP_SUMMARY"
           echo "- Video ID: ${{ steps.upload.outputs.video_id }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- URL: ${{ steps.upload.outputs.video_url }}" >> "$GITHUB_STEP_SUMMARY"
