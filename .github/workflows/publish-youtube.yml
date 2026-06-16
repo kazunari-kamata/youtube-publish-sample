@@ -98,16 +98,13 @@ jobs:
 
           description="$INPUT_DESCRIPTION"
           if [ -z "$description" ]; then
-            description="$(cat <<EOF
-GitHub Actions からアップロードした更新動画です。
-
-アップロード日時: ${uploaded_at}
-Repository: ${GITHUB_REPOSITORY}
-Branch: ${GITHUB_REF_NAME}
-Commit: ${short_sha}
-Workflow run: ${GITHUB_RUN_NUMBER}
-EOF
-)"
+            printf -v description '%s\n\nアップロード日時: %s\nRepository: %s\nBranch: %s\nCommit: %s\nWorkflow run: %s' \
+              "GitHub Actions からアップロードした更新動画です。" \
+              "$uploaded_at" \
+              "$GITHUB_REPOSITORY" \
+              "$GITHUB_REF_NAME" \
+              "$short_sha" \
+              "$GITHUB_RUN_NUMBER"
           fi
 
           echo "title=${title}" >> "$GITHUB_OUTPUT"
