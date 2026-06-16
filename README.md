@@ -452,7 +452,11 @@ Windows:
 scripts\create_video_with_codex.bat
 ```
 
-このスクリプトは `codex exec` を呼び出し、既存の `scripts/make_video.py` を使って `output/update.mp4` を作るよう Codex に依頼します。Codex CLI が未インストール、または未ログインの場合は先に Codex CLI のセットアップが必要です。
+このスクリプトは `codex exec` を呼び出し、`scripts/make_video.py` を使わずに ChatGPT / Codex の判断だけで `output/update.mp4` を作るよう依頼します。Codex は `ffmpeg` など利用可能なコマンドを選び、動画ファイルを直接生成します。Codex CLI が未インストール、または未ログインの場合は先に Codex CLI のセットアップが必要です。
+
+スクリプトは Codex CLI の実行後に `output/update.mp4` が存在し、空ファイルではないことを確認します。動画ファイルが作成されなかった場合はエラー終了します。
+
+この方式は Codex CLI の動作確認用です。動画の内容や生成コマンドは Codex の判断に依存するため、毎回まったく同じ結果になるとは限りません。安定した同じ動画を作りたい場合は、通常の `scripts/create_sample_video.sh` / `scripts/create_sample_video.bat` または `scripts/make_video.py` を使ってください。
 
 出力先、タイトル、メッセージ、秒数を変える場合は環境変数を指定します。
 
