@@ -10,6 +10,8 @@ from pathlib import Path
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the command-line argument parser for video generation."""
+
     parser = argparse.ArgumentParser(description="Generate a short MP4 update video.")
     parser.add_argument("--output", default="output/update.mp4", help="Output MP4 path.")
     parser.add_argument("--title", default="Repository Updated", help="Main title text.")
@@ -28,6 +30,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def escape_drawtext(value: str) -> str:
+    """Escape text for ffmpeg drawtext filter usage."""
+
     return (
         value.replace("\\", "\\\\")
         .replace(":", "\\:")
@@ -44,6 +48,12 @@ def generate_video(
     duration: int,
     force: bool = False,
 ) -> bool:
+    """Generate an MP4 video unless the output already exists.
+
+    Returns True when a new video was generated, and False when generation was
+    skipped because the output file already existed and force was not enabled.
+    """
+
     if output.exists() and not force:
         print(f"Video already exists, skipping generation: {output}")
         return False
@@ -83,6 +93,8 @@ def generate_video(
 
 
 def main() -> None:
+    """Run the command-line video generation flow."""
+
     args = build_parser().parse_args()
     generated = generate_video(
         Path(args.output),

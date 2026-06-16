@@ -2,6 +2,12 @@ name: YouTube 更新動画の公開
 
 on:
   workflow_dispatch:
+    inputs:
+      prepare_sample_video:
+        description: "アップロード前に output/update.mp4 を作成し、生成スキップ動作を確認する"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -38,6 +44,11 @@ jobs:
           test -n "$YOUTUBE_CLIENT_ID"
           test -n "$YOUTUBE_CLIENT_SECRET"
           test -n "$YOUTUBE_REFRESH_TOKEN"
+
+      - name: 既存動画を事前作成
+        if: ${{ inputs.prepare_sample_video }}
+        run: |
+          ./scripts/create_sample_video.sh --force
 
       - name: 更新紹介動画を生成
         run: |

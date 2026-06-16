@@ -18,6 +18,8 @@ TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build the command-line argument parser for YouTube uploads."""
+
     parser = argparse.ArgumentParser(description="Upload a video to YouTube.")
     parser.add_argument("--file", required=True, help="Path to the MP4 file to upload.")
     parser.add_argument("--title", required=True, help="YouTube video title.")
@@ -33,6 +35,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def require_env(name: str) -> str:
+    """Return a required environment variable or raise a clear error."""
+
     value = os.environ.get(name)
     if not value:
         raise RuntimeError(f"Missing required environment variable: {name}")
@@ -40,6 +44,8 @@ def require_env(name: str) -> str:
 
 
 def youtube_client():
+    """Create an authenticated YouTube Data API client."""
+
     credentials = Credentials(
         token=None,
         refresh_token=require_env("YOUTUBE_REFRESH_TOKEN"),
@@ -58,6 +64,8 @@ def upload_video(
     tags: list[str],
     privacy_status: str,
 ) -> str:
+    """Upload a video file to YouTube and return the uploaded video ID."""
+
     if not file_path.exists():
         raise FileNotFoundError(f"Video file does not exist: {file_path}")
 
@@ -93,6 +101,8 @@ def upload_video(
 
 
 def main() -> None:
+    """Run the command-line YouTube upload flow."""
+
     args = build_parser().parse_args()
     tags = [tag.strip() for tag in args.tags.split(",") if tag.strip()]
 

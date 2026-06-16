@@ -61,11 +61,14 @@ python -m unittest discover -s tests
 3. 左側の workflow 一覧から `YouTube 更新動画の公開` を選択します。
 4. `Run workflow` をクリックします。
 5. Branch が `main` になっていることを確認します。
-6. もう一度 `Run workflow` をクリックします。
-7. workflow の実行が完了するまで待ちます。
-8. 実行結果を開き、`アップロード結果を表示` step または job summary で YouTube の video ID と URL を確認します。
+6. 既存動画のアップロード動作を確認したい場合は、`prepare_sample_video` を `true` にします。
+7. もう一度 `Run workflow` をクリックします。
+8. workflow の実行が完了するまで待ちます。
+9. 実行結果を開き、`アップロード結果を表示` step または job summary で YouTube の video ID と URL を確認します。
 
 この方式では README 修正やコード修正を `main` に push しても、YouTube へのアップロードは自動では実行されません。
+
+`prepare_sample_video` を `true` にすると、workflow 内で先に `scripts/create_sample_video.sh --force` を実行して `output/update.mp4` を作成します。その後の `scripts/make_video.py` は既存ファイルを検出して動画生成をスキップし、既に存在する `output/update.mp4` を YouTube へアップロードします。
 
 ## GitHub Secrets
 
