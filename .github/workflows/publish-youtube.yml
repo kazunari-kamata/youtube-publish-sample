@@ -58,7 +58,6 @@ jobs:
           TZ: Asia/Tokyo
         run: |
           uploaded_at="$(date '+%Y-%m-%d %H:%M:%S %Z')"
-          short_sha="${GITHUB_SHA::7}"
 
           title=""
           if [ -s output/youtube-title.txt ]; then
@@ -73,13 +72,9 @@ jobs:
             description="$(cat output/youtube-description.md)"
           fi
           if [ -z "$description" ]; then
-            printf -v description '%s\n\nアップロード日時: %s\nRepository: %s\nBranch: %s\nCommit: %s\nWorkflow run: %s' \
+            printf -v description '%s\n\nアップロード日時: %s' \
               "GitHub Actions からアップロードした更新動画です。" \
-              "$uploaded_at" \
-              "$GITHUB_REPOSITORY" \
-              "$GITHUB_REF_NAME" \
-              "$short_sha" \
-              "$GITHUB_RUN_NUMBER"
+              "$uploaded_at"
           fi
 
           echo "title=${title}" >> "$GITHUB_OUTPUT"
