@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - output/update.mp4
+      - output/update-shorts.mp4
 
 permissions:
   contents: read
@@ -46,11 +47,19 @@ jobs:
       - name: アップロード対象動画を確認
         run: |
           test -s output/update.mp4
+          test -s output/update-shorts.mp4
+          echo "通常動画:"
           ffprobe -v error \
             -show_entries format=duration,size \
             -show_entries stream=width,height,nb_frames \
             -of default=noprint_wrappers=1 \
             output/update.mp4
+          echo "Shorts動画:"
+          ffprobe -v error \
+            -show_entries format=duration,size \
+            -show_entries stream=width,height,nb_frames \
+            -of default=noprint_wrappers=1 \
+            output/update-shorts.mp4
 
       - name: YouTube メタデータを作成
         id: metadata
@@ -77,14 +86,39 @@ jobs:
               "$uploaded_at"
           fi
 
+          shorts_title=""
+          if [ -s output/youtube-shorts-title.txt ]; then
+            shorts_title="$(head -n 1 output/youtube-shorts-title.txt)"
+          fi
+          if [ -z "$shorts_title" ]; then
+            shorts_title="更新Shorts ${uploaded_at} #Shorts"
+          fi
+
+          shorts_description=""
+          if [ -s output/youtube-shorts-description.md ]; then
+            shorts_description="$(cat output/youtube-shorts-description.md)"
+          fi
+          if [ -z "$shorts_description" ]; then
+            printf -v shorts_description '%s\n\nアップロード日時: %s\n\n%s' \
+              "GitHub Actions からアップロードした更新動画の要約Shortsです。" \
+              "$uploaded_at" \
+              "#Shorts"
+          fi
+
           echo "title=${title}" >> "$GITHUB_OUTPUT"
+          echo "shorts_title=${shorts_title}" >> "$GITHUB_OUTPUT"
           {
             echo "description<<EOF"
             echo "$description"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
+          {
+            echo "shorts_description<<EOF"
+            echo "$shorts_description"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: YouTube に限定公開アップロード
+      - name: YouTube に通常動画を限定公開アップロード
         id: upload
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
@@ -100,15 +134,41 @@ jobs:
             --tags "github-actions,automation,youtube,自動化" \
             --privacy-status unlisted
 
+      - name: YouTube Shorts を限定公開アップロード
+        id: upload_shorts
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          YOUTUBE_TITLE: ${{ steps.metadata.outputs.shorts_title }}
+          YOUTUBE_DESCRIPTION: ${{ steps.metadata.outputs.shorts_description }}
+        run: |
+          python scripts/upload_youtube.py \
+            --file output/update-shorts.mp4 \
+            --title "$YOUTUBE_TITLE" \
+            --description "$YOUTUBE_DESCRIPTION" \
+            --tags "github-actions,automation,youtube,shorts,自動化,要約" \
+            --privacy-status unlisted
+
       - name: アップロード結果を表示
         env:
           YOUTUBE_TITLE: ${{ steps.metadata.outputs.title }}
+          YOUTUBE_SHORTS_TITLE: ${{ steps.metadata.outputs.shorts_title }}
         run: |
           echo "YouTube title: $YOUTUBE_TITLE"
           echo "YouTube video ID: ${{ steps.upload.outputs.video_id }}"
           echo "YouTube video URL: ${{ steps.upload.outputs.video_url }}"
+          echo "YouTube Shorts title: $YOUTUBE_SHORTS_TITLE"
+          echo "YouTube Shorts video ID: ${{ steps.upload_shorts.outputs.video_id }}"
+          echo "YouTube Shorts video URL: ${{ steps.upload_shorts.outputs.video_url }}"
           echo "### YouTube upload result" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "#### 通常動画" >> "$GITHUB_STEP_SUMMARY"
           echo "- Title: $YOUTUBE_TITLE" >> "$GITHUB_STEP_SUMMARY"
           echo "- Video ID: ${{ steps.upload.outputs.video_id }}" >> "$GITHUB_STEP_SUMMARY"
           echo "- URL: ${{ steps.upload.outputs.video_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "#### Shorts" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Title: $YOUTUBE_SHORTS_TITLE" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Video ID: ${{ steps.upload_shorts.outputs.video_id }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- URL: ${{ steps.upload_shorts.outputs.video_url }}" >> "$GITHUB_STEP_SUMMARY"

@@ -5,3 +5,4 @@ __pycache__/
 output/*.mp4
 !output/.gitkeep
 !output/update.mp4
+!output/update-shorts.mp4
