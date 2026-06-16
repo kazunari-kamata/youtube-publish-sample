@@ -454,6 +454,8 @@ scripts\create_video_with_codex.bat
 
 このスクリプトは `codex exec` を呼び出し、`scripts/make_video.py` を使わずに ChatGPT / Codex の判断だけで `output/update.mp4` を作るよう依頼します。Codex は `ffmpeg` など利用可能なコマンドを選び、動画ファイルを直接生成します。Codex CLI が未インストール、または未ログインの場合は先に Codex CLI のセットアップが必要です。
 
+初期設定では、タイトルに生成日時を含めた `萌え更新速報` の動画を作ります。動画内には、オリジナルの萌え系女子キャラクター風のビジュアル、星やハートの装飾、背景色の変化、移動や点滅などの動きを入れるよう Codex に依頼します。そのため、前回と違う更新動画であることが分かりやすくなります。
+
 スクリプトは Codex CLI の実行後に `output/update.mp4` が存在し、空ファイルではないことを確認します。動画ファイルが作成されなかった場合はエラー終了します。
 
 この方式は Codex CLI の動作確認用です。動画の内容や生成コマンドは Codex の判断に依存するため、毎回まったく同じ結果になるとは限りません。安定した同じ動画を作りたい場合は、通常の `scripts/create_sample_video.sh` / `scripts/create_sample_video.bat` または `scripts/make_video.py` を使ってください。
@@ -462,9 +464,10 @@ scripts\create_video_with_codex.bat
 
 ```bash
 CODEX_VIDEO_OUTPUT="output/codex-update.mp4" \
-CODEX_VIDEO_TITLE="Codex からの更新動画" \
+CODEX_VIDEO_TITLE="萌え更新速報 2026-06-16 17:30" \
 CODEX_VIDEO_MESSAGE="ChatGPT / Codex CLI で作成しました。" \
-CODEX_VIDEO_DURATION="5" \
+CODEX_VIDEO_DURATION="6" \
+CODEX_VIDEO_STYLE="青髪ショートのオリジナル萌え系女子キャラ、星空背景、ウィンク、リボン装飾" \
 ./scripts/create_video_with_codex.sh
 ```
 
