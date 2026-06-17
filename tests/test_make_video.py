@@ -17,7 +17,7 @@ class MakeVideoTest(TestCase):
     @patch("scripts.make_video.shutil.which", return_value="/usr/bin/ffmpeg")
     def test_generate_video_invokes_ffmpeg(self, _which, run) -> None:
         generated = generate_video(
-            output=Path("output/test.mp4"),
+            output=Path("export/test.mp4"),
             title="Title",
             message="Message",
             duration=3,
@@ -27,14 +27,14 @@ class MakeVideoTest(TestCase):
         run.assert_called_once()
         command = run.call_args.args[0]
         self.assertEqual(command[0], "ffmpeg")
-        self.assertIn("output/test.mp4", command)
+        self.assertIn("export/test.mp4", command)
         self.assertIn("d=3", command[5])
 
     @patch("scripts.make_video.shutil.which", return_value=None)
     def test_generate_video_requires_ffmpeg(self, _which) -> None:
         with self.assertRaisesRegex(RuntimeError, "ffmpeg が必要"):
             generate_video(
-                output=Path("output/test.mp4"),
+                output=Path("export/test.mp4"),
                 title="Title",
                 message="Message",
                 duration=3,

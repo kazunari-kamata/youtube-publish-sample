@@ -2,7 +2,7 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
-output/*.mp4
-!output/.gitkeep
-!output/update.mp4
-!output/update-shorts.mp4
+export/*.mp4
+!export/.gitkeep
+!export/update.mp4
+!export/update-shorts.mp4

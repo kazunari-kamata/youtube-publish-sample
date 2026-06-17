@@ -8,7 +8,7 @@ check_video() {
 
   if [ ! -e "${video_path}" ]; then
     echo "pre-push: ${video_path} is required for the YouTube upload workflow." >&2
-    echo "pre-push: create both output/update.mp4 and output/update-shorts.mp4 before pushing." >&2
+    echo "pre-push: create both export/update.mp4 and export/update-shorts.mp4 before pushing." >&2
     exit 1
   fi
 
@@ -26,15 +26,15 @@ check_video() {
   if ! git diff --quiet -- "${video_path}" || ! git diff --cached --quiet -- "${video_path}" || git ls-files --others --exclude-standard -- "${video_path}" | grep -q .; then
     echo "pre-push: ${video_path} exists but is not committed." >&2
     echo "pre-push: commit it first, then push again:" >&2
-    echo "  git add -f output/update.mp4 output/update-shorts.mp4" >&2
+    echo "  git add -f export/update.mp4 export/update-shorts.mp4" >&2
     echo "  git commit -m \"アップロード用動画を更新\"" >&2
     exit 1
   fi
 }
 
-if [ ! -e output/update.mp4 ] && [ ! -e output/update-shorts.mp4 ]; then
+if [ ! -e export/update.mp4 ] && [ ! -e export/update-shorts.mp4 ]; then
   exit 0
 fi
 
-check_video "output/update.mp4"
-check_video "output/update-shorts.mp4"
+check_video "export/update.mp4"
+check_video "export/update-shorts.mp4"

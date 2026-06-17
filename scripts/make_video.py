@@ -13,7 +13,7 @@ def build_parser() -> argparse.ArgumentParser:
     """動画生成コマンドの引数パーサーを作成します。"""
 
     parser = argparse.ArgumentParser(description="短い MP4 更新紹介動画を生成します。")
-    parser.add_argument("--output", default="output/update.mp4", help="出力する MP4 ファイルのパス。")
+    parser.add_argument("--output", default="export/update.mp4", help="出力する MP4 ファイルのパス。")
     parser.add_argument("--title", default="Repository Updated", help="動画に表示するタイトル。")
     parser.add_argument(
         "--message",

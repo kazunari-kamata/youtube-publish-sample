@@ -5,8 +5,8 @@ on:
     branches:
       - main
     paths:
-      - output/update.mp4
-      - output/update-shorts.mp4
+      - export/update.mp4
+      - export/update-shorts.mp4
 
 permissions:
   contents: read
@@ -46,20 +46,20 @@ jobs:
 
       - name: アップロード対象動画を確認
         run: |
-          test -s output/update.mp4
-          test -s output/update-shorts.mp4
+          test -s export/update.mp4
+          test -s export/update-shorts.mp4
           echo "通常動画:"
           ffprobe -v error \
             -show_entries format=duration,size \
             -show_entries stream=width,height,nb_frames \
             -of default=noprint_wrappers=1 \
-            output/update.mp4
+            export/update.mp4
           echo "Shorts動画:"
           ffprobe -v error \
             -show_entries format=duration,size \
             -show_entries stream=width,height,nb_frames \
             -of default=noprint_wrappers=1 \
-            output/update-shorts.mp4
+            export/update-shorts.mp4
 
       - name: YouTube メタデータを作成
         id: metadata
@@ -69,16 +69,16 @@ jobs:
           uploaded_at="$(date '+%Y-%m-%d %H:%M:%S %Z')"
 
           title=""
-          if [ -s output/youtube-title.txt ]; then
-            title="$(head -n 1 output/youtube-title.txt)"
+          if [ -s export/youtube-title.txt ]; then
+            title="$(head -n 1 export/youtube-title.txt)"
           fi
           if [ -z "$title" ]; then
             title="更新動画 ${uploaded_at}"
           fi
 
           description=""
-          if [ -s output/youtube-description.md ]; then
-            description="$(cat output/youtube-description.md)"
+          if [ -s export/youtube-description.md ]; then
+            description="$(cat export/youtube-description.md)"
           fi
           if [ -z "$description" ]; then
             printf -v description '%s\n\nアップロード日時: %s' \
@@ -87,16 +87,16 @@ jobs:
           fi
 
           shorts_title=""
-          if [ -s output/youtube-shorts-title.txt ]; then
-            shorts_title="$(head -n 1 output/youtube-shorts-title.txt)"
+          if [ -s export/youtube-shorts-title.txt ]; then
+            shorts_title="$(head -n 1 export/youtube-shorts-title.txt)"
           fi
           if [ -z "$shorts_title" ]; then
             shorts_title="更新Shorts ${uploaded_at} #Shorts"
           fi
 
           shorts_description=""
-          if [ -s output/youtube-shorts-description.md ]; then
-            shorts_description="$(cat output/youtube-shorts-description.md)"
+          if [ -s export/youtube-shorts-description.md ]; then
+            shorts_description="$(cat export/youtube-shorts-description.md)"
           fi
           if [ -z "$shorts_description" ]; then
             printf -v shorts_description '%s\n\nアップロード日時: %s\n\n%s' \
@@ -128,7 +128,7 @@ jobs:
           YOUTUBE_DESCRIPTION: ${{ steps.metadata.outputs.description }}
         run: |
           python scripts/upload_youtube.py \
-            --file output/update.mp4 \
+            --file export/update.mp4 \
             --title "$YOUTUBE_TITLE" \
             --description "$YOUTUBE_DESCRIPTION" \
             --tags "github-actions,automation,youtube,自動化" \
@@ -144,7 +144,7 @@ jobs:
           YOUTUBE_DESCRIPTION: ${{ steps.metadata.outputs.shorts_description }}
         run: |
           python scripts/upload_youtube.py \
-            --file output/update-shorts.mp4 \
+            --file export/update-shorts.mp4 \
             --title "$YOUTUBE_TITLE" \
             --description "$YOUTUBE_DESCRIPTION" \
             --tags "github-actions,automation,youtube,shorts,自動化,要約" \

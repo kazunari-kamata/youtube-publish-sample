@@ -6,8 +6,9 @@ if ! command -v codex >/dev/null 2>&1; then
   exit 1
 fi
 
-OUTPUT_PATH="${CODEX_VIDEO_OUTPUT:-output/update.mp4}"
-SHORTS_OUTPUT_PATH="${CODEX_SHORTS_OUTPUT:-output/update-shorts.mp4}"
+OUTPUT_PATH="${CODEX_VIDEO_OUTPUT:-export/update.mp4}"
+SHORTS_OUTPUT_PATH="${CODEX_SHORTS_OUTPUT:-export/update-shorts.mp4}"
+IMPORT_IMAGE_PATH="${CODEX_IMPORT_IMAGE:-import/avator.png}"
 GENERATED_AT="$(date '+%Y-%m-%d %H:%M:%S')"
 TITLE="${CODEX_VIDEO_TITLE:-萌え更新速報 ${GENERATED_AT}}"
 MESSAGE="${CODEX_VIDEO_MESSAGE:-Codex CLI が作成した新しい更新紹介動画です。}"
@@ -40,6 +41,8 @@ esac
 PROMPT="このリポジトリで、ChatGPT / Codex の判断だけで通常動画と YouTube Shorts 用動画の 2 つの MP4 を同時に作成してください。
 scripts/make_video.py、scripts/create_sample_video.sh、scripts/create_sample_video.bat は使用しないでください。
 ffmpeg など利用可能なコマンドを自分で選び、次の 2 ファイルを直接作成してください。
+${IMPORT_IMAGE_PATH} が存在する場合は、その画像を主要キャラクター素材として必ず使用してください。
+画像素材は別キャラクターに置き換えず、背景、タイトル、装飾、ズーム、パン、フェード、軽い揺れなどの演出を追加して動画化してください。
 
 1. 通常動画
    - 出力先: ${OUTPUT_PATH}
@@ -68,7 +71,7 @@ ${STYLE}
 通常動画には少なくとも 2 つ以上のシーン、背景色の変化、キャラクターや装飾の移動・拡大縮小・点滅など、更新されたことが分かる動きを入れてください。
 Shorts 用動画は縦画面で見切れないよう、キャラクター、タイトル、日時を中央寄りに配置し、通常動画の要約だと分かる短い構成にしてください。
 既存のアニメ、ゲーム、漫画キャラクターや実在人物には似せないでください。
-output ディレクトリが無ければ作成してください。
+export ディレクトリが無ければ作成してください。
 動画生成に必要なコマンド実行以外の repository ファイル編集はしないでください。
 最後に ${OUTPUT_PATH} と ${SHORTS_OUTPUT_PATH} が存在し、どちらも空ファイルではないことを確認してください。"
 
