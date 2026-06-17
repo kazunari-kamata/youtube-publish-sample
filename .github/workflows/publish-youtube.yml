@@ -7,6 +7,18 @@ on:
     paths:
       - export/update.mp4
       - export/update-shorts.mp4
+      - export/youtube-upload-target.txt
+  workflow_dispatch:
+    inputs:
+      upload_target:
+        description: "アップロード対象"
+        required: true
+        default: "video"
+        type: choice
+        options:
+          - video
+          - shorts
+          - both
 
 permissions:
   contents: read
@@ -44,22 +56,63 @@ jobs:
           test -n "$YOUTUBE_CLIENT_SECRET"
           test -n "$YOUTUBE_REFRESH_TOKEN"
 
+      - name: アップロード対象を決定
+        id: upload_target
+        env:
+          WORKFLOW_UPLOAD_TARGET: ${{ inputs.upload_target }}
+        run: |
+          upload_target="$WORKFLOW_UPLOAD_TARGET"
+          if [ -z "$upload_target" ] && [ -s export/youtube-upload-target.txt ]; then
+            upload_target="$(head -n 1 export/youtube-upload-target.txt)"
+          fi
+          upload_target="$(printf '%s' "$upload_target" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+          if [ -z "$upload_target" ]; then
+            upload_target="video"
+          fi
+
+          case "$upload_target" in
+            video)
+              echo "upload_target=video" >> "$GITHUB_OUTPUT"
+              echo "upload_video=true" >> "$GITHUB_OUTPUT"
+              echo "upload_shorts=false" >> "$GITHUB_OUTPUT"
+              ;;
+            shorts)
+              echo "upload_target=shorts" >> "$GITHUB_OUTPUT"
+              echo "upload_video=false" >> "$GITHUB_OUTPUT"
+              echo "upload_shorts=true" >> "$GITHUB_OUTPUT"
+              ;;
+            both)
+              echo "upload_target=both" >> "$GITHUB_OUTPUT"
+              echo "upload_video=true" >> "$GITHUB_OUTPUT"
+              echo "upload_shorts=true" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "upload_target must be video, shorts, or both: $upload_target" >&2
+              exit 1
+              ;;
+          esac
+
       - name: アップロード対象動画を確認
         run: |
-          test -s export/update.mp4
-          test -s export/update-shorts.mp4
-          echo "通常動画:"
-          ffprobe -v error \
-            -show_entries format=duration,size \
-            -show_entries stream=width,height,nb_frames \
-            -of default=noprint_wrappers=1 \
-            export/update.mp4
-          echo "Shorts動画:"
-          ffprobe -v error \
-            -show_entries format=duration,size \
-            -show_entries stream=width,height,nb_frames \
-            -of default=noprint_wrappers=1 \
-            export/update-shorts.mp4
+          echo "upload target: ${{ steps.upload_target.outputs.upload_target }}"
+          if [ "${{ steps.upload_target.outputs.upload_video }}" = "true" ]; then
+            test -s export/update.mp4
+            echo "通常動画:"
+            ffprobe -v error \
+              -show_entries format=duration,size \
+              -show_entries stream=width,height,nb_frames \
+              -of default=noprint_wrappers=1 \
+              export/update.mp4
+          fi
+          if [ "${{ steps.upload_target.outputs.upload_shorts }}" = "true" ]; then
+            test -s export/update-shorts.mp4
+            echo "Shorts動画:"
+            ffprobe -v error \
+              -show_entries format=duration,size \
+              -show_entries stream=width,height,nb_frames \
+              -of default=noprint_wrappers=1 \
+              export/update-shorts.mp4
+          fi
 
       - name: YouTube メタデータを作成
         id: metadata
@@ -119,6 +172,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: YouTube に通常動画を限定公開アップロード
+        if: steps.upload_target.outputs.upload_video == 'true'
         id: upload
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
@@ -135,6 +189,7 @@ jobs:
             --privacy-status unlisted
 
       - name: YouTube Shorts を限定公開アップロード
+        if: steps.upload_target.outputs.upload_shorts == 'true'
         id: upload_shorts
         env:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
@@ -155,20 +210,27 @@ jobs:
           YOUTUBE_TITLE: ${{ steps.metadata.outputs.title }}
           YOUTUBE_SHORTS_TITLE: ${{ steps.metadata.outputs.shorts_title }}
         run: |
-          echo "YouTube title: $YOUTUBE_TITLE"
-          echo "YouTube video ID: ${{ steps.upload.outputs.video_id }}"
-          echo "YouTube video URL: ${{ steps.upload.outputs.video_url }}"
-          echo "YouTube Shorts title: $YOUTUBE_SHORTS_TITLE"
-          echo "YouTube Shorts video ID: ${{ steps.upload_shorts.outputs.video_id }}"
-          echo "YouTube Shorts video URL: ${{ steps.upload_shorts.outputs.video_url }}"
+          echo "Upload target: ${{ steps.upload_target.outputs.upload_target }}"
           echo "### YouTube upload result" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "#### 通常動画" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Title: $YOUTUBE_TITLE" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Video ID: ${{ steps.upload.outputs.video_id }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- URL: ${{ steps.upload.outputs.video_url }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "#### Shorts" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Title: $YOUTUBE_SHORTS_TITLE" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Video ID: ${{ steps.upload_shorts.outputs.video_id }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- URL: ${{ steps.upload_shorts.outputs.video_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Upload target: ${{ steps.upload_target.outputs.upload_target }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.upload_target.outputs.upload_video }}" = "true" ]; then
+            echo "YouTube title: $YOUTUBE_TITLE"
+            echo "YouTube video ID: ${{ steps.upload.outputs.video_id }}"
+            echo "YouTube video URL: ${{ steps.upload.outputs.video_url }}"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "#### 通常動画" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Title: $YOUTUBE_TITLE" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Video ID: ${{ steps.upload.outputs.video_id }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- URL: ${{ steps.upload.outputs.video_url }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "${{ steps.upload_target.outputs.upload_shorts }}" = "true" ]; then
+            echo "YouTube Shorts title: $YOUTUBE_SHORTS_TITLE"
+            echo "YouTube Shorts video ID: ${{ steps.upload_shorts.outputs.video_id }}"
+            echo "YouTube Shorts video URL: ${{ steps.upload_shorts.outputs.video_url }}"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "#### Shorts" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Title: $YOUTUBE_SHORTS_TITLE" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Video ID: ${{ steps.upload_shorts.outputs.video_id }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "- URL: ${{ steps.upload_shorts.outputs.video_url }}" >> "$GITHUB_STEP_SUMMARY"
+          fi

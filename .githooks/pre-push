@@ -3,12 +3,25 @@ set -euo pipefail
 
 max_bytes=$((95 * 1024 * 1024))
 
+upload_target="video"
+if [ -s export/youtube-upload-target.txt ]; then
+  upload_target="$(head -n 1 export/youtube-upload-target.txt | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+fi
+
+case "${upload_target}" in
+  video | shorts | both) ;;
+  *)
+    echo "pre-push: export/youtube-upload-target.txt must be video, shorts, or both." >&2
+    exit 1
+    ;;
+esac
+
 check_video() {
   video_path="$1"
 
   if [ ! -e "${video_path}" ]; then
     echo "pre-push: ${video_path} is required for the YouTube upload workflow." >&2
-    echo "pre-push: create both export/update.mp4 and export/update-shorts.mp4 before pushing." >&2
+    echo "pre-push: upload target is ${upload_target}." >&2
     exit 1
   fi
 
@@ -36,5 +49,10 @@ if [ ! -e export/update.mp4 ] && [ ! -e export/update-shorts.mp4 ]; then
   exit 0
 fi
 
-check_video "export/update.mp4"
-check_video "export/update-shorts.mp4"
+if [ "${upload_target}" = "video" ] || [ "${upload_target}" = "both" ]; then
+  check_video "export/update.mp4"
+fi
+
+if [ "${upload_target}" = "shorts" ] || [ "${upload_target}" = "both" ]; then
+  check_video "export/update-shorts.mp4"
+fi

@@ -9,6 +9,7 @@ if errorlevel 1 (
 if "%CODEX_VIDEO_OUTPUT%"=="" set "CODEX_VIDEO_OUTPUT=export\update.mp4"
 if "%CODEX_SHORTS_OUTPUT%"=="" set "CODEX_SHORTS_OUTPUT=export\update-shorts.mp4"
 if "%CODEX_IMPORT_IMAGE%"=="" set "CODEX_IMPORT_IMAGE=import\avator.png"
+if "%CODEX_GENERATE_TARGET%"=="" set "CODEX_GENERATE_TARGET=video"
 if "%CODEX_VIDEO_TITLE%"=="" set "CODEX_VIDEO_TITLE=萌え更新速報 %DATE% %TIME%"
 if "%CODEX_VIDEO_MESSAGE%"=="" set "CODEX_VIDEO_MESSAGE=Codex CLI が作成した新しい更新紹介動画です。"
 if "%CODEX_VIDEO_DURATION%"=="" set "CODEX_VIDEO_DURATION=10"
@@ -30,12 +31,13 @@ pushd "%~dp0.."
 codex exec ^
   --cd "%CD%" ^
   --sandbox workspace-write ^
-  "このリポジトリで、ChatGPT / Codex の判断だけで通常動画と YouTube Shorts 用動画の 2 つの MP4 を同時に作成してください。scripts/make_video.py、scripts/create_sample_video.sh、scripts/create_sample_video.bat は使用しないでください。ffmpeg など利用可能なコマンドを自分で選び、通常動画は %CODEX_VIDEO_OUTPUT% に横長 16:9、1280x720、%CODEX_VIDEO_DURATION% 秒程度で作成してください。Shorts 用動画は %CODEX_SHORTS_OUTPUT% に縦長 9:16、1080x1920、%CODEX_SHORTS_DURATION% 秒程度で作成してください。%CODEX_IMPORT_IMAGE% が存在する場合は、その画像を主要キャラクター素材として必ず使用してください。画像素材は別キャラクターに置き換えず、背景、タイトル、装飾、ズーム、パン、フェード、軽い揺れなどの演出を追加して動画化してください。通常動画にはタイトル「%CODEX_VIDEO_TITLE%」と補足「%CODEX_VIDEO_MESSAGE%」を表示してください。Shorts にはタイトル「%CODEX_SHORTS_TITLE%」と補足「%CODEX_SHORTS_MESSAGE%」を表示し、通常動画の要点を短くまとめてください。ビジュアルは「%CODEX_VIDEO_STYLE%」にしてください。どちらも単なる文字だけの動画にはせず、オリジナルの萌え系女子キャラクター風の顔または上半身、髪、目、表情、星やハートなどの装飾を図形や描画フィルタ等で表現してください。顔の輪郭を先に決め、その顔の中心線と左右対称の目の座標を決めてから描画してください。顔の範囲、左目中心、右目中心、目の半径を決めたうえで、両目が顔の輪郭の外へ出ないことを確認してから描画してください。目のパーツが顔の下端や輪郭の外にかかる配置は失敗として扱い、座標を直してください。目、口、髪、服が互いに重なって破綻しないように、座標と描画順を明示的に管理してください。通常動画には少なくとも 2 つ以上のシーン、背景色の変化、キャラクターや装飾の移動・拡大縮小・点滅など、更新されたことが分かる動きを入れてください。Shorts 用動画は縦画面で見切れないよう、キャラクター、タイトル、日時を中央寄りに配置してください。既存のアニメ、ゲーム、漫画キャラクターや実在人物には似せないでください。export ディレクトリが無ければ作成してください。動画生成に必要なコマンド実行以外の repository ファイル編集はしないでください。最後に %CODEX_VIDEO_OUTPUT% と %CODEX_SHORTS_OUTPUT% が存在し、どちらも空ファイルではないことを確認してください。"
+  "このリポジトリで、ChatGPT / Codex の判断だけで指定された MP4 動画を作成してください。生成対象は %CODEX_GENERATE_TARGET% です。video は通常動画のみ、shorts は Shorts のみ、both は両方を意味します。scripts/make_video.py、scripts/create_sample_video.sh、scripts/create_sample_video.bat は使用しないでください。ffmpeg など利用可能なコマンドを自分で選び、通常動画は %CODEX_VIDEO_OUTPUT% に横長 16:9、1280x720、%CODEX_VIDEO_DURATION% 秒程度で作成してください。Shorts 用動画は %CODEX_SHORTS_OUTPUT% に縦長 9:16、1080x1920、%CODEX_SHORTS_DURATION% 秒程度で作成してください。%CODEX_IMPORT_IMAGE% が存在する場合は、その画像を主要キャラクター素材として必ず使用してください。import ディレクトリに *.vrm が存在する場合は、可能なら VRM を主要キャラクター素材として使ってください。VRM を直接レンダリングできるコマンドが無い場合は、VRM ファイル名を画面内に示し、%CODEX_IMPORT_IMAGE% など利用可能なプレビュー画像を使って動画化してください。import ディレクトリに *.unitypackage が存在する場合は、可能なら中身を調べて使える画像やモデル素材を利用してください。Unity が無い環境で直接開けない場合は、unitypackage ファイル名を画面内に示し、利用可能な画像素材で代替してください。通常動画にはタイトル「%CODEX_VIDEO_TITLE%」と補足「%CODEX_VIDEO_MESSAGE%」を表示してください。Shorts にはタイトル「%CODEX_SHORTS_TITLE%」と補足「%CODEX_SHORTS_MESSAGE%」を表示し、通常動画の要点を短くまとめてください。ビジュアルは「%CODEX_VIDEO_STYLE%」にしてください。どちらも単なる文字だけの動画にはせず、背景、タイトル、装飾、ズーム、パン、フェード、軽い揺れなどの演出を追加してください。export ディレクトリが無ければ作成してください。動画生成に必要なコマンド実行以外の repository ファイル編集はしないでください。最後に生成対象に含まれる出力ファイルが存在し、空ファイルではないことを確認してください。"
 set "CODEX_RESULT=%ERRORLEVEL%"
 if not "%CODEX_RESULT%"=="0" (
   popd
   exit /b %CODEX_RESULT%
 )
+if /I "%CODEX_GENERATE_TARGET%"=="shorts" goto check_shorts
 if not exist "%CODEX_VIDEO_OUTPUT%" (
   echo Codex CLI did not create a video file: %CODEX_VIDEO_OUTPUT%
   popd
@@ -47,6 +49,9 @@ for %%A in ("%CODEX_VIDEO_OUTPUT%") do if %%~zA==0 (
   exit /b 1
 )
 echo Codex CLI created video: %CODEX_VIDEO_OUTPUT%
+if /I "%CODEX_GENERATE_TARGET%"=="video" goto done
+
+:check_shorts
 if not exist "%CODEX_SHORTS_OUTPUT%" (
   echo Codex CLI did not create a Shorts video file: %CODEX_SHORTS_OUTPUT%
   popd
@@ -58,5 +63,7 @@ for %%A in ("%CODEX_SHORTS_OUTPUT%") do if %%~zA==0 (
   exit /b 1
 )
 echo Codex CLI created Shorts video: %CODEX_SHORTS_OUTPUT%
+
+:done
 popd
 exit /b 0

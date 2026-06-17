@@ -2,6 +2,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .ruff_cache/
+import/*.vrm
+import/*.unitypackage
 export/*.mp4
 !export/.gitkeep
 !export/update.mp4
