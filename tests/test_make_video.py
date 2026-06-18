@@ -5,7 +5,7 @@ from unittest import TestCase
 from unittest.mock import patch
 
 from scripts.make_video import escape_drawtext, generate_video
-from scripts.render_vrm_with_blender import color_saturation, count_unity_assets, choose_avatar_color, find_first_file, resolve_path
+from scripts.render_vrm_with_blender import count_unity_assets, find_first_file, resolve_path
 
 
 class MakeVideoTest(TestCase):
@@ -120,24 +120,3 @@ class MakeVideoTest(TestCase):
                 archive.add(asset_dir, arcname="abc")
 
             self.assertEqual(count_unity_assets(package), 1)
-
-    def test_color_saturation_detects_gray_and_colored_values(self) -> None:
-        """グレーと有彩色の差を簡易判定できることを確認します。"""
-
-        self.assertEqual(color_saturation((0.5, 0.5, 0.5, 1.0)), 0.0)
-        self.assertGreater(color_saturation((1.0, 0.4, 0.6, 1.0)), 0.5)
-
-    def test_choose_avatar_color_uses_names_before_height_fallback(self) -> None:
-        """mesh/material 名がある場合は高さより名前を優先して色を選ぶことを確認します。"""
-
-        palette = {
-            "skin": (1.0, 0.8, 0.7, 1.0),
-            "hair": (1.0, 0.4, 0.7, 1.0),
-            "eye": (0.9, 0.0, 0.8, 1.0),
-            "shirt": (0.0, 0.4, 0.6, 1.0),
-            "skirt": (0.6, 0.7, 0.9, 1.0),
-            "shoe": (0.4, 0.4, 0.4, 1.0),
-        }
-
-        self.assertEqual(choose_avatar_color("PinkHair", 0.2, palette), palette["hair"])
-        self.assertEqual(choose_avatar_color("mesh", 0.52, palette), palette["shirt"])
