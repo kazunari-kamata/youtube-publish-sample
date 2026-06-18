@@ -1,11 +1,13 @@
 @echo off
 setlocal EnableDelayedExpansion
+REM Codex CLI が使えない環境では動画生成を開始せずに終了します。
 where codex >nul 2>nul
 if errorlevel 1 (
   echo codex command was not found. Install and sign in to Codex CLI first.
   exit /b 1
 )
 
+REM CODEX_* 環境変数が未指定の場合はサンプル用の初期値を使います。
 if "%CODEX_VIDEO_OUTPUT%"=="" set "CODEX_VIDEO_OUTPUT=export\update.mp4"
 if "%CODEX_SHORTS_OUTPUT%"=="" set "CODEX_SHORTS_OUTPUT=export\update-shorts.mp4"
 if "%CODEX_IMPORT_IMAGE%"=="" set "CODEX_IMPORT_IMAGE=import\avator.png"
@@ -17,6 +19,7 @@ if "%CODEX_SHORTS_TITLE%"=="" set "CODEX_SHORTS_TITLE=萌え更新速報 Shorts 
 if "%CODEX_SHORTS_MESSAGE%"=="" set "CODEX_SHORTS_MESSAGE=通常動画の内容を5秒で要約したShortsです。"
 if "%CODEX_SHORTS_DURATION%"=="" set "CODEX_SHORTS_DURATION=5"
 if "%CODEX_VIDEO_STYLE%"=="" (
+  REM 目の位置ずれを避けるため、キャラクター描画時の座標条件を明示します。
   set "CODEX_VIDEO_STYLE=一般的なフリー素材風のアニメ立ち絵を参考にした、完全オリジナルの萌え系女子キャラクター。"
   set "CODEX_VIDEO_STYLE=!CODEX_VIDEO_STYLE! 顔は画面中央付近に配置し、輪郭、髪、目、口、服の順で破綻なく重ねる。"
   set "CODEX_VIDEO_STYLE=!CODEX_VIDEO_STYLE! 大きな瞳は左右同じ高さで、必ず顔の内側に配置する。目が顔から飛び出したり、左右で極端にズレたりしないようにする。"
@@ -28,6 +31,7 @@ if "%CODEX_VIDEO_STYLE%"=="" (
 )
 
 pushd "%~dp0.."
+REM scripts/make_video.py を使わず、Codex CLI に MP4 の直接生成だけを依頼します。
 codex exec ^
   --cd "%CD%" ^
   --sandbox workspace-write ^
@@ -37,6 +41,7 @@ if not "%CODEX_RESULT%"=="0" (
   popd
   exit /b %CODEX_RESULT%
 )
+REM 生成対象のファイルが存在し、空ファイルではないことを確認します。
 if /I "%CODEX_GENERATE_TARGET%"=="shorts" goto check_shorts
 if not exist "%CODEX_VIDEO_OUTPUT%" (
   echo Codex CLI did not create a video file: %CODEX_VIDEO_OUTPUT%

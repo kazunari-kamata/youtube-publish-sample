@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BLENDER_BIN="${BLENDER_BIN:-}"
 
+# BLENDER_BIN が未指定の場合は PATH、macOS 標準配置の順に Blender を探します。
 if [ -z "${BLENDER_BIN}" ]; then
   if command -v blender >/dev/null 2>&1; then
     BLENDER_BIN="$(command -v blender)"
@@ -15,6 +16,7 @@ if [ -z "${BLENDER_BIN}" ]; then
   fi
 fi
 
+# 環境変数で通常動画、Shorts、両方の生成対象と出力先を切り替えます。
 TARGET="${BLENDER_GENERATE_TARGET:-video}"
 GPU_BACKEND="${BLENDER_GPU_BACKEND:-opengl}"
 RENDER_MODE="${BLENDER_RENDER_MODE:-viewport}"
@@ -36,6 +38,7 @@ case "${TARGET}" in
     ;;
 esac
 
+# Blender 側の script へ渡す前に、検証用の絶対パスも用意します。
 case "${OUTPUT_PATH}" in
   /*) OUTPUT_FILE="${OUTPUT_PATH}" ;;
   *) OUTPUT_FILE="${REPO_ROOT}/${OUTPUT_PATH}" ;;
@@ -64,6 +67,7 @@ BLENDER_ARGS=(
 )
 
 render_viewport_animation() {
+  # prepare mode で保存した .blend を開き、viewport render で軽量に MP4 を出力します。
   local blend_file="$1"
   local output_file="$2"
 
@@ -75,6 +79,7 @@ render_viewport_animation() {
 }
 
 overlay_video_metadata() {
+  # GitHub 上で動画を見たときに生成元が分かるよう、上下にタイトルと素材情報を焼き込みます。
   local output_file="$1"
   local title_text="$2"
   local source_text="$3"
@@ -100,6 +105,7 @@ overlay_video_metadata() {
 }
 
 if [ "${RENDER_MODE}" = "viewport" ]; then
+  # viewport mode はまず scene を .blend として準備し、その後 OpenGL render で動画化します。
   PREPARE_ARGS=("${BLENDER_ARGS[@]}")
   PREPARE_ARGS[${#PREPARE_ARGS[@]}-1]="prepare"
   "${BLENDER_BIN}" --background "${PREPARE_ARGS[@]}"
@@ -112,12 +118,14 @@ if [ "${RENDER_MODE}" = "viewport" ]; then
     overlay_video_metadata "${SHORTS_OUTPUT_FILE}" "${SHORTS_TITLE}" "source: import/avator.vrm + import/avator.unitypackage / viewport render"
   fi
 elif [ "${RENDER_MODE}" = "final" ]; then
+  # final mode は Blender の通常レンダーをそのまま実行します。
   "${BLENDER_BIN}" --background "${BLENDER_ARGS[@]}"
 else
   echo "BLENDER_RENDER_MODE must be viewport or final: ${RENDER_MODE}" >&2
   exit 1
 fi
 
+# 指定された生成対象のファイルが空ではないことを最後に確認します。
 case "${TARGET}" in
   video)
     test -s "${OUTPUT_FILE}"

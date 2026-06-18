@@ -6,6 +6,7 @@ if ! command -v codex >/dev/null 2>&1; then
   exit 1
 fi
 
+# CODEX_* 環境変数で出力先、素材、動画尺、画面内テキストを上書きできます。
 OUTPUT_PATH="${CODEX_VIDEO_OUTPUT:-export/update.mp4}"
 SHORTS_OUTPUT_PATH="${CODEX_SHORTS_OUTPUT:-export/update-shorts.mp4}"
 IMPORT_IMAGE_PATH="${CODEX_IMPORT_IMAGE:-import/avator.png}"
@@ -30,6 +31,8 @@ EOF
 )"
 STYLE="${CODEX_VIDEO_STYLE:-${DEFAULT_STYLE}}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# 入力ゆれを避けるため、生成対象は小文字かつ空白なしに正規化します。
 GENERATE_TARGET="$(printf '%s' "${GENERATE_TARGET}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
 case "${GENERATE_TARGET}" in
   video | shorts | both) ;;
@@ -38,6 +41,8 @@ case "${GENERATE_TARGET}" in
     exit 1
     ;;
 esac
+
+# Codex には repository root 基準の相対パスを渡し、検証時だけ絶対パスを使います。
 case "${OUTPUT_PATH}" in
   /*) OUTPUT_FILE="${OUTPUT_PATH}" ;;
   *) OUTPUT_FILE="${REPO_ROOT}/${OUTPUT_PATH}" ;;
@@ -59,6 +64,7 @@ case "${GENERATE_TARGET}" in
     ;;
 esac
 
+# scripts/make_video.py を使わず、Codex CLI 自身に動画ファイル作成だけを依頼します。
 PROMPT="このリポジトリで、ChatGPT / Codex の判断だけで指定された MP4 動画を作成してください。
 scripts/make_video.py、scripts/create_sample_video.sh、scripts/create_sample_video.bat は使用しないでください。
 ffmpeg など利用可能なコマンドを自分で選び、指定された出力ファイルを直接作成してください。
@@ -105,6 +111,7 @@ codex exec \
   --sandbox workspace-write \
   "${PROMPT}"
 
+# 生成対象に含まれるファイルが作られていない場合は CI に載せる前に失敗させます。
 if { [ "${GENERATE_TARGET}" = "video" ] || [ "${GENERATE_TARGET}" = "both" ]; } && [ ! -s "${OUTPUT_FILE}" ]; then
   echo "Codex CLI did not create a video file: ${OUTPUT_PATH}" >&2
   exit 1

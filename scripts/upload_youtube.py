@@ -82,6 +82,7 @@ def upload_video(
         },
     }
     media = MediaFileUpload(str(file_path), chunksize=-1, resumable=True)
+    # resumable upload を使い、サイズが大きい動画でも同じ処理でアップロードします。
     request = youtube.videos().insert(
         part="snippet,status",
         body=body,
@@ -90,6 +91,7 @@ def upload_video(
 
     response = None
     while response is None:
+        # next_chunk は完了まで response=None を返すため、進捗だけ表示して継続します。
         status, response = request.next_chunk()
         if status:
             print(f"アップロード進行状況: {int(status.progress() * 100)}%")
@@ -117,6 +119,7 @@ def main() -> None:
         video_url = f"https://www.youtube.com/watch?v={video_id}"
         github_output = os.environ.get("GITHUB_OUTPUT")
         if github_output:
+            # GitHub Actions の後続 step や summary から参照できるように結果を書き出します。
             with open(github_output, "a", encoding="utf-8") as output:
                 output.write(f"video_id={video_id}\n")
                 output.write(f"video_url={video_url}\n")

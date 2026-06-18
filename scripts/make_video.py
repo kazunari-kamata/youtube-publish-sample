@@ -63,6 +63,7 @@ def generate_video(
 
     output.parent.mkdir(parents=True, exist_ok=True)
 
+    # drawtext は :, ', %, \ を特別扱いするため、入力テキストを先に安全化します。
     title_text = escape_drawtext(title)
     message_text = escape_drawtext(message)
     filter_graph = (
@@ -88,6 +89,7 @@ def generate_video(
         "+faststart",
         str(output),
     ]
+    # ffmpeg による実ファイル生成を失敗時に例外化し、CI で検知しやすくします。
     subprocess.run(command, check=True)
     return True
 

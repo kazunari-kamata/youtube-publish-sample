@@ -9,7 +9,11 @@ from scripts.render_vrm_with_blender import count_unity_assets, find_first_file,
 
 
 class MakeVideoTest(TestCase):
+    """動画生成と Blender 補助関数の単体テストです。"""
+
     def test_escape_drawtext_escapes_ffmpeg_special_characters(self) -> None:
+        """ffmpeg drawtext で意味を持つ文字がエスケープされることを確認します。"""
+
         self.assertEqual(
             escape_drawtext("a:b'c%d\\e\nf"),
             "a\\:b\\'c\\%d\\\\e f",
@@ -18,6 +22,8 @@ class MakeVideoTest(TestCase):
     @patch("scripts.make_video.subprocess.run")
     @patch("scripts.make_video.shutil.which", return_value="/usr/bin/ffmpeg")
     def test_generate_video_invokes_ffmpeg(self, _which, run) -> None:
+        """ffmpeg が存在する場合に動画生成コマンドが実行されることを確認します。"""
+
         generated = generate_video(
             output=Path("export/test.mp4"),
             title="Title",
@@ -34,6 +40,8 @@ class MakeVideoTest(TestCase):
 
     @patch("scripts.make_video.shutil.which", return_value=None)
     def test_generate_video_requires_ffmpeg(self, _which) -> None:
+        """ffmpeg が PATH に無い場合は分かりやすい例外になることを確認します。"""
+
         with self.assertRaisesRegex(RuntimeError, "ffmpeg が必要"):
             generate_video(
                 output=Path("export/test.mp4"),
@@ -45,6 +53,8 @@ class MakeVideoTest(TestCase):
     @patch("scripts.make_video.subprocess.run")
     @patch("scripts.make_video.shutil.which", return_value="/usr/bin/ffmpeg")
     def test_generate_video_skips_existing_file_without_force(self, _which, run) -> None:
+        """既存動画があり force 無効の場合は生成をスキップすることを確認します。"""
+
         with TemporaryDirectory() as tmpdir:
             output = Path(tmpdir) / "existing.mp4"
             output.write_bytes(b"already exists")
@@ -62,6 +72,8 @@ class MakeVideoTest(TestCase):
     @patch("scripts.make_video.subprocess.run")
     @patch("scripts.make_video.shutil.which", return_value="/usr/bin/ffmpeg")
     def test_generate_video_overwrites_existing_file_with_force(self, _which, run) -> None:
+        """既存動画があっても force 有効なら再生成することを確認します。"""
+
         with TemporaryDirectory() as tmpdir:
             output = Path(tmpdir) / "existing.mp4"
             output.write_bytes(b"already exists")
@@ -78,11 +90,15 @@ class MakeVideoTest(TestCase):
         run.assert_called_once()
 
     def test_resolve_path_uses_repo_root_for_relative_path(self) -> None:
+        """相対パスが repository root 基準の絶対パスに解決されることを確認します。"""
+
         repo_root = Path("/repo")
 
         self.assertEqual(resolve_path(repo_root, "export/update.mp4"), Path("/repo/export/update.mp4"))
 
     def test_find_first_file_returns_sorted_match(self) -> None:
+        """複数ファイルがある場合に名前順で最初の一致を返すことを確認します。"""
+
         with TemporaryDirectory() as tmpdir:
             directory = Path(tmpdir)
             (directory / "b.vrm").write_text("b", encoding="utf-8")
@@ -91,6 +107,8 @@ class MakeVideoTest(TestCase):
             self.assertEqual(find_first_file(directory, "*.vrm"), directory / "a.vrm")
 
     def test_count_unity_assets_counts_asset_entries(self) -> None:
+        """unitypackage 内の asset エントリ数を数えられることを確認します。"""
+
         with TemporaryDirectory() as tmpdir:
             package = Path(tmpdir) / "sample.unitypackage"
             asset_dir = Path(tmpdir) / "payload" / "abc"
