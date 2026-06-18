@@ -119,6 +119,15 @@ def parent_to_turntable(bpy, objects: list, center) -> object:
     return empty
 
 
+def find_armature(bpy):
+    """scene 内で最初に見つかった Armature object を返します。"""
+
+    for obj in bpy.data.objects:
+        if obj.type == "ARMATURE":
+            return obj
+    return None
+
+
 def add_text(bpy, text: str, location: tuple[float, float, float], size: float, align: str = "CENTER") -> object:
     """scene 内に説明用の text object を追加します。"""
 
@@ -232,6 +241,79 @@ def animate_turntable(bpy, root: object, duration: int, shorts: bool) -> None:
                 keyframe.interpolation = "BEZIER"
 
 
+def set_pose_rotation(armature, bone_name: str, rotation: tuple[float, float, float], frame: int) -> None:
+    """指定ボーンへ Euler 回転を設定し、keyframe を追加します。"""
+
+    pose_bone = armature.pose.bones.get(bone_name)
+    if pose_bone is None:
+        return
+    pose_bone.rotation_mode = "XYZ"
+    pose_bone.rotation_euler = tuple(math.radians(value) for value in rotation)
+    pose_bone.keyframe_insert(data_path="rotation_euler", frame=frame)
+
+
+def set_root_motion(root: object, rotation_z: float, frame: int) -> None:
+    """モデル全体の向きに keyframe を追加します。"""
+
+    root.rotation_euler = (0.0, 0.0, math.radians(rotation_z))
+    root.keyframe_insert(data_path="rotation_euler", frame=frame)
+
+
+def animate_radio_exercise(bpy, root: object, duration: int) -> None:
+    """30秒のラジオ体操風モーションを設定します。
+
+    厳密な公式振り付けではなく、腕を開く、上げる、体をひねる、軽く屈伸する
+    といった動きが動画内で分かるようにした簡易モーションです。
+    """
+
+    scene = bpy.context.scene
+    armature = find_armature(bpy)
+    if armature is None:
+        animate_turntable(bpy, root, duration, shorts=False)
+        return
+
+    fps = scene.render.fps
+    end_frame = scene.frame_end
+    keyframes = [
+        (1, "準備", -8, 0, 0, 0, 0, 0, 0),
+        (fps * 4, "腕を横へ", -4, 0, 0, -8, 0, 0, 8),
+        (fps * 8, "腕を上へ", 0, -50, 0, -22, 50, 0, 22),
+        (fps * 12, "胸を開く", 5, -18, 18, -18, 18, -18, 18),
+        (fps * 16, "体を左へ", -14, -28, -10, -18, 28, 10, 18),
+        (fps * 20, "体を右へ", 14, -28, 10, -18, 28, -10, 18),
+        (fps * 24, "腕を振る", -6, -8, 24, -12, 8, -24, 12),
+        (fps * 28, "深呼吸", 0, -45, 0, -18, 45, 0, 18),
+        (end_frame, "終了", 0, 0, 0, 0, 0, 0, 0),
+    ]
+
+    left_arm = "Character1_LeftArm"
+    left_forearm = "Character1_LeftForeArm"
+    right_arm = "Character1_RightArm"
+    right_forearm = "Character1_RightForeArm"
+    spine = "Character1_Spine1"
+    hips = "Character1_Hips"
+    left_leg = "Character1_LeftUpLeg"
+    right_leg = "Character1_RightUpLeg"
+
+    for frame, _label, root_z, left_x, left_y, left_z, right_x, right_y, right_z in keyframes:
+        frame = min(int(frame), end_frame)
+        set_root_motion(root, root_z, frame)
+        set_pose_rotation(armature, left_arm, (left_x, left_y, left_z), frame)
+        set_pose_rotation(armature, left_forearm, (left_x * 0.35, 0, left_z * 0.4), frame)
+        set_pose_rotation(armature, right_arm, (right_x, right_y, right_z), frame)
+        set_pose_rotation(armature, right_forearm, (right_x * 0.35, 0, right_z * 0.4), frame)
+        set_pose_rotation(armature, spine, (0, 0, root_z * 0.45), frame)
+        set_pose_rotation(armature, hips, (abs(root_z) * 0.18, 0, root_z * 0.18), frame)
+        set_pose_rotation(armature, left_leg, (abs(root_z) * 0.18, 0, 0), frame)
+        set_pose_rotation(armature, right_leg, (abs(root_z) * 0.18, 0, 0), frame)
+
+    for animated in [root, armature]:
+        if animated.animation_data and animated.animation_data.action:
+            for curve in animated.animation_data.action.fcurves:
+                for keyframe in curve.keyframe_points:
+                    keyframe.interpolation = "BEZIER"
+
+
 def render_video(
     repo_root: Path,
     output: Path,
@@ -276,7 +358,10 @@ def render_video(
         add_text(bpy, f"rendered with Blender / {generated_at}", (0.0, -1.35, center.z - size * 0.95), 0.05)
 
     configure_render_settings(bpy, output, width, height, duration)
-    animate_turntable(bpy, root, duration, shorts=shorts)
+    if shorts:
+        animate_turntable(bpy, root, duration, shorts=shorts)
+    else:
+        animate_radio_exercise(bpy, root, duration)
     bpy.ops.wm.save_as_mainfile(filepath=str(output.with_suffix(".blend")))
     if render_mode == "prepare":
         return

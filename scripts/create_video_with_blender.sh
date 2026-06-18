@@ -21,11 +21,11 @@ RENDER_MODE="${BLENDER_RENDER_MODE:-viewport}"
 OUTPUT_PATH="${BLENDER_VIDEO_OUTPUT:-export/update.mp4}"
 SHORTS_OUTPUT_PATH="${BLENDER_SHORTS_OUTPUT:-export/update-shorts.mp4}"
 GENERATED_AT="$(date '+%Y-%m-%d %H:%M:%S')"
-TITLE="${BLENDER_VIDEO_TITLE:-VRM更新動画 ${GENERATED_AT}}"
-MESSAGE="${BLENDER_VIDEO_MESSAGE:-Blender が import/avator.vrm を読み込んで生成した更新紹介動画です。}"
+TITLE="${BLENDER_VIDEO_TITLE:-Radio Taiso VRM ${GENERATED_AT}}"
+MESSAGE="${BLENDER_VIDEO_MESSAGE:-Blender が import/avator.vrm を読み込み、30秒のラジオ体操風モーションを生成しました。}"
 SHORTS_TITLE="${BLENDER_SHORTS_TITLE:-VRM更新Shorts ${GENERATED_AT} #Shorts}"
 SHORTS_MESSAGE="${BLENDER_SHORTS_MESSAGE:-VRM素材から生成した要約Shortsです。}"
-DURATION="${BLENDER_VIDEO_DURATION:-10}"
+DURATION="${BLENDER_VIDEO_DURATION:-30}"
 SHORTS_DURATION="${BLENDER_SHORTS_DURATION:-5}"
 
 case "${TARGET}" in
@@ -105,7 +105,7 @@ if [ "${RENDER_MODE}" = "viewport" ]; then
   "${BLENDER_BIN}" --background "${PREPARE_ARGS[@]}"
   if [ "${TARGET}" = "video" ] || [ "${TARGET}" = "both" ]; then
     render_viewport_animation "${OUTPUT_FILE%.mp4}.blend" "${OUTPUT_FILE}"
-    overlay_video_metadata "${OUTPUT_FILE}" "${TITLE}" "source: import/avator.vrm + import/avator.unitypackage / viewport render"
+    overlay_video_metadata "${OUTPUT_FILE}" "${TITLE}" "radio exercise / source: import/avator.vrm + import/avator.unitypackage / viewport render"
   fi
   if [ "${TARGET}" = "shorts" ] || [ "${TARGET}" = "both" ]; then
     render_viewport_animation "${SHORTS_OUTPUT_FILE%.mp4}.blend" "${SHORTS_OUTPUT_FILE}"
