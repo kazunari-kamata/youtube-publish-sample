@@ -12,6 +12,7 @@
 - `import/*.vrm` や `import/*.unitypackage` が存在する場合は、可能な範囲でその素材を使って動画を作成
 - アップロード対象は `video`、`shorts`、`both` から選択。未指定時の初期値は `video`
 - ローカル端末から `scripts/create_sample_video.sh` / `scripts/create_sample_video.bat` を実行して数秒の動画を生成
+- Blender が使えるローカル端末では `scripts/create_video_with_blender.sh` で `import/*.vrm` を直接読み込んだ動画を生成
 - Codex CLI から `scripts/create_video_with_codex.sh` / `scripts/create_video_with_codex.bat` を実行し、ChatGPT / Codex に通常動画と Shorts 用動画の同時生成を依頼
 - 任意で `export/youtube-title.txt` / `export/youtube-description.md` を commit し、通常動画の title / description を指定
 - 任意で `export/youtube-shorts-title.txt` / `export/youtube-shorts-description.md` を commit し、Shorts 用動画の title / description を指定
@@ -28,10 +29,12 @@ youtube-publish-sample/
 ├── scripts/
 │   ├── create_sample_video.bat
 │   ├── create_sample_video.sh
+│   ├── create_video_with_blender.sh
 │   ├── create_video_with_codex.bat
 │   ├── create_video_with_codex.sh
 │   ├── install_git_hooks.sh
 │   ├── make_video.py
+│   ├── render_vrm_with_blender.py
 │   └── upload_youtube.py
 ├── import/
 │   └── avator.png
@@ -109,11 +112,54 @@ Codex CLI などでローカルに `export/update.mp4` と `export/update-shorts
 
 `*.vrm` と `*.unitypackage` はサイズが大きくなりやすいため、初期設定では `.gitignore` の対象です。ローカル生成用の入力素材として `import/` に置き、完成した `export/update.mp4` や `export/update-shorts.mp4` だけを commit する運用を想定しています。
 
+### Blender で VRM から動画を生成する
+
+Blender がインストールされ、CLI から起動できる場合は、Codex CLI を使わずに `import/*.vrm` を直接読み込んで動画を生成できます。
+
+```bash
+./scripts/create_video_with_blender.sh
+```
+
+初期値では通常動画だけを `export/update.mp4` に生成します。Shorts だけ、または両方を生成したい場合は `BLENDER_GENERATE_TARGET` を指定します。
+
+```bash
+BLENDER_GENERATE_TARGET=shorts ./scripts/create_video_with_blender.sh
+BLENDER_GENERATE_TARGET=both ./scripts/create_video_with_blender.sh
+```
+
+`blender` コマンドが PATH に無い場合でも、macOS の `/Applications/Blender.app/Contents/MacOS/Blender` が存在すれば自動検出します。別の場所にインストールしている場合は `BLENDER_BIN` を指定してください。
+
+```bash
+BLENDER_BIN="/Applications/Blender.app/Contents/MacOS/Blender" ./scripts/create_video_with_blender.sh
+```
+
+この Blender 生成では、`import/*.vrm` を glTF として Blender に読み込み、モデルを回転させる動画を作成します。`import/*.unitypackage` がある場合は asset 数を読み取り、動画内のメタ情報として表示します。UnityPackage の prefab や scene を完全に再現する処理ではありません。
+
+Blender 4.5 以降の macOS 版は GPU backend が Metal のみです。環境によっては background 起動直後に Metal 初期化で `Segmentation fault` になることがあります。その場合は、Blender 3.6 LTS など Intel Mac / macOS 12 で安定する旧版を使うか、Unity 側で素材を確認してから完成動画を書き出してください。
+
+### UnityPackage を使う場合
+
+Unity を使う場合は、`import/*.unitypackage` を Unity project に import して prefab、scene、texture、animation を確認できます。Unity で確認・調整した結果を動画として書き出し、完成した MP4 を `export/update.mp4` または `export/update-shorts.mp4` として commit してください。
+
+Unity の batchmode はライセンス確認や初回起動設定が必要です。macOS で Unity Hub から入れた Editor は、次のように確認できます。
+
+```bash
+/Applications/Unity/Hub/Editor/6000.5.0f1/Unity.app/Contents/MacOS/Unity \
+  -batchmode \
+  -nographics \
+  -quit \
+  -logFile - \
+  -version
+```
+
+Unity Recorder などで動画を書き出す構成はプロジェクト依存になりやすいため、このサンプルでは完成済み MP4 を `export/` に置いて GitHub Actions からアップロードする方式を基本にしています。
+
 手順:
 
-1. Codex CLI で動画を作成します。
+1. Blender または Codex CLI で動画を作成します。
 
    ```bash
+   ./scripts/create_video_with_blender.sh
    ./scripts/create_video_with_codex.sh
    ```
 

@@ -1,9 +1,11 @@
 from pathlib import Path
+import tarfile
 from tempfile import TemporaryDirectory
 from unittest import TestCase
 from unittest.mock import patch
 
 from scripts.make_video import escape_drawtext, generate_video
+from scripts.render_vrm_with_blender import count_unity_assets, find_first_file, resolve_path
 
 
 class MakeVideoTest(TestCase):
@@ -74,3 +76,29 @@ class MakeVideoTest(TestCase):
 
         self.assertTrue(generated)
         run.assert_called_once()
+
+    def test_resolve_path_uses_repo_root_for_relative_path(self) -> None:
+        repo_root = Path("/repo")
+
+        self.assertEqual(resolve_path(repo_root, "export/update.mp4"), Path("/repo/export/update.mp4"))
+
+    def test_find_first_file_returns_sorted_match(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            directory = Path(tmpdir)
+            (directory / "b.vrm").write_text("b", encoding="utf-8")
+            (directory / "a.vrm").write_text("a", encoding="utf-8")
+
+            self.assertEqual(find_first_file(directory, "*.vrm"), directory / "a.vrm")
+
+    def test_count_unity_assets_counts_asset_entries(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            package = Path(tmpdir) / "sample.unitypackage"
+            asset_dir = Path(tmpdir) / "payload" / "abc"
+            asset_dir.mkdir(parents=True)
+            (asset_dir / "asset").write_text("asset", encoding="utf-8")
+            (asset_dir / "pathname").write_text("Assets/Sample.asset", encoding="utf-8")
+
+            with tarfile.open(package, "w:gz") as archive:
+                archive.add(asset_dir, arcname="abc")
+
+            self.assertEqual(count_unity_assets(package), 1)

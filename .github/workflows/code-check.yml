@@ -29,7 +29,7 @@ jobs:
 
       - name: 構文チェック
         run: |
-          python -m py_compile scripts/make_video.py scripts/upload_youtube.py
+          python -m py_compile scripts/make_video.py scripts/render_vrm_with_blender.py scripts/upload_youtube.py
 
       - name: テスト
         run: |
