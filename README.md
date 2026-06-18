@@ -133,9 +133,15 @@ BLENDER_GENERATE_TARGET=both ./scripts/create_video_with_blender.sh
 BLENDER_BIN="/Applications/Blender.app/Contents/MacOS/Blender" ./scripts/create_video_with_blender.sh
 ```
 
+Blender 3.6 系の macOS 版では、初期値として `--gpu-backend opengl` を付けて起動します。Metal で問題なく動く環境では `BLENDER_GPU_BACKEND=metal` を指定できます。
+
+```bash
+BLENDER_GPU_BACKEND=metal ./scripts/create_video_with_blender.sh
+```
+
 この Blender 生成では、`import/*.vrm` を glTF として Blender に読み込み、モデルを回転させる動画を作成します。`import/*.unitypackage` がある場合は asset 数を読み取り、動画内のメタ情報として表示します。UnityPackage の prefab や scene を完全に再現する処理ではありません。
 
-Blender 4.5 以降の macOS 版は GPU backend が Metal のみです。環境によっては background 起動直後に Metal 初期化で `Segmentation fault` になることがあります。その場合は、Blender 3.6 LTS など Intel Mac / macOS 12 で安定する旧版を使うか、Unity 側で素材を確認してから完成動画を書き出してください。
+Blender 4.5 以降の macOS 版は GPU backend が Metal のみです。環境によっては background 起動直後に Metal 初期化で `Segmentation fault` になることがあります。その場合は、Blender 3.6 LTS など `--gpu-backend opengl` が使える旧版を使うか、Unity 側で素材を確認してから完成動画を書き出してください。
 
 ### UnityPackage を使う場合
 

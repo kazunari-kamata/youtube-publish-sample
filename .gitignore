@@ -6,6 +6,7 @@ import/*.vrm
 import/*.unitypackage
 export/*.mp4
 export/*.blend
+export/*.blend1
 !export/.gitkeep
 !export/update.mp4
 !export/update-shorts.mp4

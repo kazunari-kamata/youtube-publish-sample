@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import sys
 import tarfile
 from datetime import datetime
 from pathlib import Path
@@ -24,6 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--message", default="", help="通常動画の補足メッセージ。")
     parser.add_argument("--shorts-title", default="", help="Shorts 動画のタイトル。")
     parser.add_argument("--shorts-message", default="", help="Shorts 動画の補足メッセージ。")
+    parser.add_argument("--render-mode", default="viewport", choices=["viewport", "final", "prepare"], help="レンダリング方式。")
     return parser
 
 
@@ -167,8 +169,9 @@ def add_background(bpy, Vector, horizontal: bool) -> None:
 def configure_camera_and_light(bpy, Vector, center, size: float, horizontal: bool) -> None:
     """モデル全体が見える camera と light を配置します。"""
 
-    camera_distance = max(size * (2.2 if horizontal else 2.8), 2.4)
-    camera_z = center.z + size * (0.55 if horizontal else 0.75)
+    camera_distance = max(size * (3.3 if horizontal else 4.2), 3.2)
+    camera_z = center.z + size * (0.18 if horizontal else 0.28)
+    target = Vector((center.x, center.y, center.z + size * (0.05 if horizontal else 0.08)))
 
     bpy.ops.object.light_add(type="AREA", location=(0.0, -2.6, center.z + size * 1.4))
     light = bpy.context.object
@@ -176,10 +179,12 @@ def configure_camera_and_light(bpy, Vector, center, size: float, horizontal: boo
     light.data.energy = 520
     light.data.size = 4.0
 
-    bpy.ops.object.camera_add(location=(0.0, -camera_distance, camera_z), rotation=(math.radians(70), 0.0, 0.0))
+    bpy.ops.object.camera_add(location=(center.x, center.y - camera_distance, camera_z))
     camera = bpy.context.object
     bpy.context.scene.camera = camera
-    camera.data.lens = 42 if horizontal else 55
+    direction = target - camera.location
+    camera.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+    camera.data.lens = 24 if horizontal else 35
     camera.data.dof.use_dof = True
     camera.data.dof.focus_distance = camera_distance
     camera.data.dof.aperture_fstop = 8
@@ -189,11 +194,14 @@ def configure_render_settings(bpy, output: Path, width: int, height: int, durati
     """Blender の MP4 レンダリング設定を適用します。"""
 
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE_NEXT"
-    scene.eevee.taa_render_samples = 32
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = 12
+    scene.cycles.preview_samples = 4
+    scene.cycles.use_denoising = True
     scene.frame_start = 1
-    scene.frame_end = duration * 30
-    scene.render.fps = 30
+    scene.frame_end = duration * 12
+    scene.render.fps = 12
     scene.render.resolution_x = width
     scene.render.resolution_y = height
     scene.render.resolution_percentage = 100
@@ -231,6 +239,7 @@ def render_video(
     message: str,
     duration: int,
     shorts: bool,
+    render_mode: str,
 ) -> None:
     """VRM と unitypackage 情報を使って 1 本の MP4 動画をレンダリングします。"""
 
@@ -269,13 +278,19 @@ def render_video(
     configure_render_settings(bpy, output, width, height, duration)
     animate_turntable(bpy, root, duration, shorts=shorts)
     bpy.ops.wm.save_as_mainfile(filepath=str(output.with_suffix(".blend")))
-    bpy.ops.render.render(animation=True)
+    if render_mode == "prepare":
+        return
+    if render_mode == "viewport":
+        bpy.ops.render.opengl(animation=True, view_context=False)
+    else:
+        bpy.ops.render.render(animation=True)
 
 
 def main() -> None:
     """Blender background mode から通常動画または Shorts を生成します。"""
 
-    args = build_parser().parse_args()
+    argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+    args = build_parser().parse_args(argv)
     repo_root = Path(args.repo_root).resolve()
     title_suffix = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -287,6 +302,7 @@ def main() -> None:
             message=args.message or "Blender が import/avator.vrm を読み込んで生成しました。",
             duration=args.duration,
             shorts=False,
+            render_mode=args.render_mode,
         )
 
     if args.target in {"shorts", "both"}:
@@ -297,6 +313,7 @@ def main() -> None:
             message=args.shorts_message or "VRM素材から生成した要約Shortsです。",
             duration=args.shorts_duration,
             shorts=True,
+            render_mode=args.render_mode,
         )
 
 
