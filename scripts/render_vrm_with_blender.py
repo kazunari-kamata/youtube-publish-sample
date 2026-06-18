@@ -178,8 +178,8 @@ def add_background(bpy, Vector, horizontal: bool) -> None:
 def configure_camera_and_light(bpy, Vector, center, size: float, horizontal: bool) -> None:
     """モデル全体が見える camera と light を配置します。"""
 
-    camera_distance = max(size * (3.3 if horizontal else 4.2), 3.2)
-    camera_z = center.z + size * (0.18 if horizontal else 0.28)
+    camera_distance = max(size * (2.2 if horizontal else 2.7), 2.2)
+    camera_z = center.z + size * (0.14 if horizontal else 0.22)
     target = Vector((center.x, center.y, center.z + size * (0.05 if horizontal else 0.08)))
 
     bpy.ops.object.light_add(type="AREA", location=(0.0, -2.6, center.z + size * 1.4))
@@ -193,7 +193,7 @@ def configure_camera_and_light(bpy, Vector, center, size: float, horizontal: boo
     bpy.context.scene.camera = camera
     direction = target - camera.location
     camera.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
-    camera.data.lens = 24 if horizontal else 35
+    camera.data.lens = 36 if horizontal else 48
     camera.data.dof.use_dof = True
     camera.data.dof.focus_distance = camera_distance
     camera.data.dof.aperture_fstop = 8
