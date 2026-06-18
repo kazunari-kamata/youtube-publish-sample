@@ -209,8 +209,8 @@ def configure_render_settings(bpy, output: Path, width: int, height: int, durati
     scene.cycles.preview_samples = 4
     scene.cycles.use_denoising = True
     scene.frame_start = 1
-    scene.frame_end = duration * 12
-    scene.render.fps = 12
+    scene.frame_end = duration * 30
+    scene.render.fps = 30
     scene.render.resolution_x = width
     scene.render.resolution_y = height
     scene.render.resolution_percentage = 100
@@ -221,6 +221,138 @@ def configure_render_settings(bpy, output: Path, width: int, height: int, durati
     scene.render.ffmpeg.constant_rate_factor = "MEDIUM"
     scene.render.ffmpeg.ffmpeg_preset = "GOOD"
     scene.render.ffmpeg.audio_codec = "AAC"
+
+
+def color_saturation(color: tuple[float, float, float, float]) -> float:
+    """RGB 色の彩度を簡易計算します。"""
+
+    return max(color[:3]) - min(color[:3])
+
+
+def material_needs_avatar_color(material) -> bool:
+    """Blender import 後の material が実質グレーの場合に True を返します。"""
+
+    color = tuple(material.diffuse_color)
+    return color_saturation(color) < 0.08
+
+
+def sample_image_color(bpy, image_path: Path, point: tuple[float, float], fallback: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
+    """avator.png の指定位置付近から、背景を除いた平均色を取得します。"""
+
+    if not image_path.exists():
+        return fallback
+
+    image = bpy.data.images.load(str(image_path), check_existing=True)
+    width, height = image.size
+    if width <= 0 or height <= 0:
+        return fallback
+
+    x_center = int(max(0, min(width - 1, point[0] * (width - 1))))
+    # Blender image pixels are bottom-up; point[1] is top-origin for readability.
+    y_center = int(max(0, min(height - 1, (1.0 - point[1]) * (height - 1))))
+    radius = max(5, min(width, height) // 28)
+    pixels = image.pixels
+    total = [0.0, 0.0, 0.0]
+    count = 0
+
+    for y in range(max(0, y_center - radius), min(height, y_center + radius + 1)):
+        for x in range(max(0, x_center - radius), min(width, x_center + radius + 1)):
+            index = (y * width + x) * 4
+            r, g, b, a = pixels[index : index + 4]
+            if a < 0.15:
+                continue
+            if r > 0.88 and g > 0.88 and b > 0.88:
+                continue
+            total[0] += r
+            total[1] += g
+            total[2] += b
+            count += 1
+
+    if count == 0:
+        return fallback
+    return (total[0] / count, total[1] / count, total[2] / count, 1.0)
+
+
+def avatar_palette_from_image(bpy, image_path: Path | None) -> dict[str, tuple[float, float, float, float]]:
+    """avator.png の見た目から部位ごとの代表色を作成します。"""
+
+    if image_path is None:
+        image_path = Path()
+
+    return {
+        "skin": sample_image_color(bpy, image_path, (0.50, 0.53), (1.0, 0.78, 0.68, 1.0)),
+        "hair": sample_image_color(bpy, image_path, (0.50, 0.16), (1.0, 0.45, 0.62, 1.0)),
+        "eye": sample_image_color(bpy, image_path, (0.47, 0.19), (0.95, 0.02, 0.75, 1.0)),
+        "shirt": sample_image_color(bpy, image_path, (0.50, 0.39), (0.02, 0.42, 0.56, 1.0)),
+        "skirt": sample_image_color(bpy, image_path, (0.50, 0.59), (0.66, 0.76, 0.92, 1.0)),
+        "shoe": sample_image_color(bpy, image_path, (0.50, 0.94), (0.50, 0.52, 0.56, 1.0)),
+    }
+
+
+def choose_avatar_color(name: str, local_z: float, palette: dict[str, tuple[float, float, float, float]]) -> tuple[float, float, float, float]:
+    """mesh/material 名と高さから、avator.png 由来の色を選びます。"""
+
+    lowered = name.lower()
+    if any(word in lowered for word in ("eye", "瞳", "目")):
+        return palette["eye"]
+    if any(word in lowered for word in ("hair", "髪", "kami")):
+        return palette["hair"]
+    if any(word in lowered for word in ("skirt", "スカート")):
+        return palette["skirt"]
+    if any(word in lowered for word in ("shirt", "tops", "top", "cloth", "服", "上着")):
+        return palette["shirt"]
+    if any(word in lowered for word in ("shoe", "靴", "sneaker")):
+        return palette["shoe"]
+    if any(word in lowered for word in ("skin", "body", "face", "hand", "leg", "arm", "肌", "顔")):
+        return palette["skin"]
+    if local_z > 0.70:
+        return palette["hair"]
+    if local_z > 0.48:
+        return palette["shirt"]
+    if local_z > 0.32:
+        return palette["skirt"]
+    if local_z < 0.08:
+        return palette["shoe"]
+    return palette["skin"]
+
+
+def strengthen_viewport_material(bpy, material, color: tuple[float, float, float, float]) -> None:
+    """viewport/final render の両方で色が出るよう material を設定します。"""
+
+    material.diffuse_color = color
+    material.use_nodes = True
+    bsdf = material.node_tree.nodes.get("Principled BSDF")
+    if bsdf is not None:
+        bsdf.inputs["Base Color"].default_value = color
+        bsdf.inputs["Roughness"].default_value = 0.62
+
+
+def apply_avatar_colors(bpy, objects: list, Vector, center, size: float, avatar_image: Path | None) -> int:
+    """VRM material が灰色になった場合に avator.png 由来の色で補います。"""
+
+    palette = avatar_palette_from_image(bpy, avatar_image)
+    recolored = 0
+
+    for obj in objects:
+        if obj.type != "MESH":
+            continue
+        mesh_center_z = sum((obj.matrix_world @ Vector(corner)).z for corner in obj.bound_box) / len(obj.bound_box)
+        local_z = max(0.0, min(1.0, (mesh_center_z - (center.z - size * 0.5)) / size))
+
+        if not obj.data.materials:
+            material = make_material(bpy, f"{obj.name} avatar color", choose_avatar_color(obj.name, local_z, palette))
+            obj.data.materials.append(material)
+
+        for slot in obj.material_slots:
+            if slot.material is None:
+                slot.material = make_material(bpy, f"{obj.name} avatar color", choose_avatar_color(obj.name, local_z, palette))
+            if material_needs_avatar_color(slot.material):
+                chosen = choose_avatar_color(f"{obj.name} {slot.material.name}", local_z, palette)
+                strengthen_viewport_material(bpy, slot.material, chosen)
+                obj.color = chosen
+                recolored += 1
+
+    return recolored
 
 
 def animate_turntable(bpy, root: object, duration: int, shorts: bool) -> None:
@@ -275,14 +407,20 @@ def animate_radio_exercise(bpy, root: object, duration: int) -> None:
     fps = scene.render.fps
     end_frame = scene.frame_end
     keyframes = [
-        (1, "準備", -8, 0, 0, 0, 0, 0, 0),
-        (fps * 4, "腕を横へ", -4, 0, 0, -8, 0, 0, 8),
-        (fps * 8, "腕を上へ", 0, -50, 0, -22, 50, 0, 22),
-        (fps * 12, "胸を開く", 5, -18, 18, -18, 18, -18, 18),
-        (fps * 16, "体を左へ", -14, -28, -10, -18, 28, 10, 18),
-        (fps * 20, "体を右へ", 14, -28, 10, -18, 28, -10, 18),
-        (fps * 24, "腕を振る", -6, -8, 24, -12, 8, -24, 12),
-        (fps * 28, "深呼吸", 0, -45, 0, -18, 45, 0, 18),
+        (1, "準備", -10, 0, 0, 0, 0, 0, 0),
+        (fps * 2, "腕を横へ", -6, -12, 10, -18, 12, -10, 18),
+        (fps * 4, "腕を戻す", 4, 4, 0, -4, -4, 0, 4),
+        (fps * 6, "腕を上へ", 0, -62, 0, -28, 62, 0, 28),
+        (fps * 8, "腕を下ろす", -4, -8, 8, -10, 8, -8, 10),
+        (fps * 10, "胸を開く", 8, -26, 24, -22, 26, -24, 22),
+        (fps * 12, "左ひねり", -18, -34, -12, -26, 34, 12, 26),
+        (fps * 14, "中央", 0, -8, 0, -10, 8, 0, 10),
+        (fps * 16, "右ひねり", 18, -34, 12, -26, 34, -12, 26),
+        (fps * 18, "腕を振る左", -10, -12, 32, -22, 12, -32, 22),
+        (fps * 20, "腕を振る右", 10, -12, -28, 22, 12, 28, -22),
+        (fps * 22, "軽く屈伸", 0, -18, 14, -18, 18, -14, 18),
+        (fps * 24, "大きく深呼吸", -6, -55, 8, -24, 55, -8, 24),
+        (fps * 27, "腕を開く", 6, -22, 30, -28, 22, -30, 28),
         (end_frame, "終了", 0, 0, 0, 0, 0, 0, 0),
     ]
 
@@ -295,9 +433,11 @@ def animate_radio_exercise(bpy, root: object, duration: int) -> None:
     left_leg = "Character1_LeftUpLeg"
     right_leg = "Character1_RightUpLeg"
 
-    for frame, _label, root_z, left_x, left_y, left_z, right_x, right_y, right_z in keyframes:
+    for index, (frame, _label, root_z, left_x, left_y, left_z, right_x, right_y, right_z) in enumerate(keyframes):
         frame = min(int(frame), end_frame)
         set_root_motion(root, root_z, frame)
+        root.location.z = math.sin(index * math.pi * 0.5) * 0.035
+        root.keyframe_insert(data_path="location", frame=frame)
         set_pose_rotation(armature, left_arm, (left_x, left_y, left_z), frame)
         set_pose_rotation(armature, left_forearm, (left_x * 0.35, 0, left_z * 0.4), frame)
         set_pose_rotation(armature, right_arm, (right_x, right_y, right_z), frame)
@@ -329,6 +469,7 @@ def render_video(
     import_dir = repo_root / "import"
     vrm_path = find_first_file(import_dir, "*.vrm")
     unitypackage_path = find_first_file(import_dir, "*.unitypackage")
+    avatar_image_path = find_first_file(import_dir, "*.png")
 
     if vrm_path is None:
         raise FileNotFoundError("import/*.vrm が見つかりません。")
@@ -338,6 +479,7 @@ def render_video(
     imported = import_vrm(bpy, vrm_path)
     center, size = scene_bounds(imported, Vector)
     root = parent_to_turntable(bpy, imported, center)
+    recolored_materials = apply_avatar_colors(bpy, imported, Vector, center, size, avatar_image_path)
 
     unity_assets = count_unity_assets(unitypackage_path)
     horizontal = not shorts
@@ -349,12 +491,12 @@ def render_video(
         width, height = 1080, 1920
         add_text(bpy, title, (0.0, -1.25, center.z + size * 1.35), 0.22)
         add_text(bpy, message, (0.0, -1.25, center.z - size * 0.55), 0.095)
-        add_text(bpy, f"{vrm_path.name} / Unity assets {unity_assets} / {generated_at}", (0.0, -1.25, center.z - size * 0.85), 0.065)
+        add_text(bpy, f"{vrm_path.name} / Unity assets {unity_assets} / recolored {recolored_materials} / {generated_at}", (0.0, -1.25, center.z - size * 0.85), 0.065)
     else:
         width, height = 1280, 720
         add_text(bpy, title, (0.0, -1.35, center.z + size * 1.1), 0.18)
         add_text(bpy, message, (0.0, -1.35, center.z - size * 0.52), 0.075)
-        add_text(bpy, f"source {vrm_path.name} + {unitypackage_path.name if unitypackage_path else 'no unitypackage'} / Unity assets {unity_assets}", (0.0, -1.35, center.z - size * 0.78), 0.055)
+        add_text(bpy, f"source {vrm_path.name} + {unitypackage_path.name if unitypackage_path else 'no unitypackage'} / Unity assets {unity_assets} / recolored {recolored_materials}", (0.0, -1.35, center.z - size * 0.78), 0.055)
         add_text(bpy, f"rendered with Blender / {generated_at}", (0.0, -1.35, center.z - size * 0.95), 0.05)
 
     configure_render_settings(bpy, output, width, height, duration)

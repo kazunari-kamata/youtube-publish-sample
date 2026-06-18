@@ -109,6 +109,11 @@ class _FakeYouTubeClient:
 class UploadYouTubeTest(TestCase):
     """YouTube アップロード処理の単体テストです。"""
 
+    def test_youtube_video_url_uses_share_url_format(self) -> None:
+        """アップロード結果 URL が youtu.be の共有 URL 形式になることを確認します。"""
+
+        self.assertEqual(upload_youtube.youtube_video_url("E6hkVVFkLqQ"), "https://youtu.be/E6hkVVFkLqQ")
+
     def test_require_env_returns_value(self) -> None:
         """必須環境変数が設定済みなら値を返すことを確認します。"""
 

@@ -17,6 +17,12 @@ YOUTUBE_UPLOAD_SCOPE = "https://www.googleapis.com/auth/youtube.upload"
 TOKEN_URI = "https://oauth2.googleapis.com/token"
 
 
+def youtube_video_url(video_id: str) -> str:
+    """YouTube の共有用短縮 URL を作成します。"""
+
+    return f"https://youtu.be/{video_id}"
+
+
 def build_parser() -> argparse.ArgumentParser:
     """YouTube アップロードコマンドの引数パーサーを作成します。"""
 
@@ -97,7 +103,7 @@ def upload_video(
             print(f"アップロード進行状況: {int(status.progress() * 100)}%")
 
     video_id = response["id"]
-    video_url = f"https://www.youtube.com/watch?v={video_id}"
+    video_url = youtube_video_url(video_id)
     print(f"アップロードした動画: {video_url}")
     return video_id
 
@@ -116,7 +122,7 @@ def main() -> None:
             tags=tags,
             privacy_status=args.privacy_status,
         )
-        video_url = f"https://www.youtube.com/watch?v={video_id}"
+        video_url = youtube_video_url(video_id)
         github_output = os.environ.get("GITHUB_OUTPUT")
         if github_output:
             # GitHub Actions の後続 step や summary から参照できるように結果を書き出します。
