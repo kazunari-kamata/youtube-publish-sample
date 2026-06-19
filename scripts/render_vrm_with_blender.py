@@ -259,6 +259,16 @@ def set_root_motion(root: object, rotation_z: float, frame: int) -> None:
     root.keyframe_insert(data_path="rotation_euler", frame=frame)
 
 
+def set_pose_location(armature, bone_name: str, location: tuple[float, float, float], frame: int) -> None:
+    """指定ボーンへ位置を設定し、keyframe を追加します。"""
+
+    pose_bone = armature.pose.bones.get(bone_name)
+    if pose_bone is None:
+        return
+    pose_bone.location = location
+    pose_bone.keyframe_insert(data_path="location", frame=frame)
+
+
 def animate_radio_exercise(bpy, root: object, duration: int) -> None:
     """30秒のラジオ体操風モーションを設定します。
 
@@ -275,21 +285,21 @@ def animate_radio_exercise(bpy, root: object, duration: int) -> None:
     fps = scene.render.fps
     end_frame = scene.frame_end
     keyframes = [
-        (1, "準備", -10, 0, 0, 0, 0, 0, 0),
-        (fps * 2, "腕を横へ", -6, -12, 10, -18, 12, -10, 18),
-        (fps * 4, "腕を戻す", 4, 4, 0, -4, -4, 0, 4),
-        (fps * 6, "腕を上へ", 0, -62, 0, -28, 62, 0, 28),
-        (fps * 8, "腕を下ろす", -4, -8, 8, -10, 8, -8, 10),
-        (fps * 10, "胸を開く", 8, -26, 24, -22, 26, -24, 22),
-        (fps * 12, "左ひねり", -18, -34, -12, -26, 34, 12, 26),
-        (fps * 14, "中央", 0, -8, 0, -10, 8, 0, 10),
-        (fps * 16, "右ひねり", 18, -34, 12, -26, 34, -12, 26),
-        (fps * 18, "腕を振る左", -10, -12, 32, -22, 12, -32, 22),
-        (fps * 20, "腕を振る右", 10, -12, -28, 22, 12, 28, -22),
-        (fps * 22, "軽く屈伸", 0, -18, 14, -18, 18, -14, 18),
-        (fps * 24, "大きく深呼吸", -6, -55, 8, -24, 55, -8, 24),
-        (fps * 27, "腕を開く", 6, -22, 30, -28, 22, -30, 28),
-        (end_frame, "終了", 0, 0, 0, 0, 0, 0, 0),
+        (1, "準備", -10, 0, 0, 0, 0, 0, 0, 0),
+        (fps * 2, "左ステップ", -6, -12, 10, -18, 12, -10, 18, -1),
+        (fps * 4, "右ステップ", 4, 4, 0, -4, -4, 0, 4, 1),
+        (fps * 6, "腕を上へ", 0, -62, 0, -28, 62, 0, 28, 0),
+        (fps * 8, "左屈伸", -4, -8, 8, -10, 8, -8, 10, -1),
+        (fps * 10, "右屈伸", 8, -26, 24, -22, 26, -24, 22, 1),
+        (fps * 12, "左ひねり", -18, -34, -12, -26, 34, 12, 26, -1),
+        (fps * 14, "中央", 0, -8, 0, -10, 8, 0, 10, 0),
+        (fps * 16, "右ひねり", 18, -34, 12, -26, 34, -12, 26, 1),
+        (fps * 18, "左足前", -10, -12, 32, -22, 12, -32, 22, -1),
+        (fps * 20, "右足前", 10, -12, -28, 22, 12, 28, -22, 1),
+        (fps * 22, "軽く屈伸", 0, -18, 14, -18, 18, -14, 18, 0),
+        (fps * 24, "大きく深呼吸", -6, -55, 8, -24, 55, -8, 24, -1),
+        (fps * 27, "腕を開く", 6, -22, 30, -28, 22, -30, 28, 1),
+        (end_frame, "終了", 0, 0, 0, 0, 0, 0, 0, 0),
     ]
 
     left_arm = "Character1_LeftArm"
@@ -300,20 +310,39 @@ def animate_radio_exercise(bpy, root: object, duration: int) -> None:
     hips = "Character1_Hips"
     left_leg = "Character1_LeftUpLeg"
     right_leg = "Character1_RightUpLeg"
+    left_knee = "Character1_LeftLeg"
+    right_knee = "Character1_RightLeg"
+    left_foot = "Character1_LeftFoot"
+    right_foot = "Character1_RightFoot"
 
-    for index, (frame, _label, root_z, left_x, left_y, left_z, right_x, right_y, right_z) in enumerate(keyframes):
+    for index, (frame, _label, root_z, left_x, left_y, left_z, right_x, right_y, right_z, step) in enumerate(keyframes):
         frame = min(int(frame), end_frame)
+        step_phase = math.sin(index * math.pi * 0.5)
+        bounce = 0.022 if step == 0 else 0.052
         set_root_motion(root, root_z, frame)
-        root.location.z = math.sin(index * math.pi * 0.5) * 0.035
+        root.location.x = step * 0.035
+        root.location.z = abs(step_phase) * bounce
         root.keyframe_insert(data_path="location", frame=frame)
         set_pose_rotation(armature, left_arm, (left_x, left_y, left_z), frame)
         set_pose_rotation(armature, left_forearm, (left_x * 0.35, 0, left_z * 0.4), frame)
         set_pose_rotation(armature, right_arm, (right_x, right_y, right_z), frame)
         set_pose_rotation(armature, right_forearm, (right_x * 0.35, 0, right_z * 0.4), frame)
-        set_pose_rotation(armature, spine, (0, 0, root_z * 0.45), frame)
-        set_pose_rotation(armature, hips, (abs(root_z) * 0.18, 0, root_z * 0.18), frame)
-        set_pose_rotation(armature, left_leg, (abs(root_z) * 0.18, 0, 0), frame)
-        set_pose_rotation(armature, right_leg, (abs(root_z) * 0.18, 0, 0), frame)
+        set_pose_rotation(armature, spine, (step * -4, 0, root_z * 0.55), frame)
+        set_pose_rotation(armature, hips, (4 + abs(root_z) * 0.25, step * 3, root_z * 0.22), frame)
+        set_pose_location(armature, hips, (step * 0.006, 0, abs(step_phase) * 0.012), frame)
+
+        left_stride = -18 if step < 0 else 15 if step > 0 else 7
+        right_stride = 15 if step < 0 else -18 if step > 0 else 7
+        left_knee_bend = 18 if step < 0 else 6 if step > 0 else 14
+        right_knee_bend = 6 if step < 0 else 18 if step > 0 else 14
+        left_ankle = -8 if step < 0 else 6 if step > 0 else 0
+        right_ankle = 6 if step < 0 else -8 if step > 0 else 0
+        set_pose_rotation(armature, left_leg, (left_stride, step * 4, -step * 3), frame)
+        set_pose_rotation(armature, right_leg, (right_stride, step * 4, -step * 3), frame)
+        set_pose_rotation(armature, left_knee, (left_knee_bend, 0, 0), frame)
+        set_pose_rotation(armature, right_knee, (right_knee_bend, 0, 0), frame)
+        set_pose_rotation(armature, left_foot, (left_ankle, 0, step * 2), frame)
+        set_pose_rotation(armature, right_foot, (right_ankle, 0, step * 2), frame)
 
     for animated in [root, armature]:
         if animated.animation_data and animated.animation_data.action:
