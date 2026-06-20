@@ -350,8 +350,8 @@ def animate_radio_exercise(bpy, root: object, duration: int) -> None:
         right_ankle = 6 if step < 0 else -8 if step > 0 else 0
         set_pose_rotation(armature, left_leg, (left_stride + squat * 0.46 - bow * 0.12, step * 4, -step * 3), frame)
         set_pose_rotation(armature, right_leg, (right_stride + squat * 0.46 - bow * 0.12, step * 4, -step * 3), frame)
-        set_pose_rotation(armature, left_knee, (left_knee_bend, 0, 0), frame)
-        set_pose_rotation(armature, right_knee, (right_knee_bend, 0, 0), frame)
+        set_pose_rotation(armature, left_knee, (-left_knee_bend, 0, 0), frame)
+        set_pose_rotation(armature, right_knee, (-right_knee_bend, 0, 0), frame)
         set_pose_rotation(armature, left_foot, (left_ankle - squat * 0.48 + bow * 0.15, 0, step * 2), frame)
         set_pose_rotation(armature, right_foot, (right_ankle - squat * 0.48 + bow * 0.15, 0, step * 2), frame)
 
